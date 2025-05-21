@@ -1,3 +1,6 @@
+docs/structurizr/*.json
+docs/structurizr/.structurizr
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
