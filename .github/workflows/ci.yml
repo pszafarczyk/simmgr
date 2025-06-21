@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        project: ["net-configurator","sim-manager"]
+        project: ["net-configurator"]
 
     steps:
       - uses: actions/checkout@v4
@@ -51,7 +51,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        project: ["net-configurator","sim-manager"]
+        project: ["net-configurator"]
     
     steps:
     - uses: actions/checkout@v4
