@@ -63,5 +63,6 @@ class RulesSource:
             ValidationError: If input data violates Rule's basic restrictions.
             ValueError: If input data violates Rule's custom restrictions.
             TypeError: If JSON data is not array.
+            Exception: Other types raised by read_all of given reader.
         """
         return [Rule(**rule) for rule in self.__source.read_all()]
