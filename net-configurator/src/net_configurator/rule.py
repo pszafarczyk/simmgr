@@ -101,7 +101,7 @@ class Rule(BaseModel):
         owners (set[str]): Owner tags.
 
     Raises:
-        ValidationError: When data violates restrictions.
+        ValidationError: If data violates restrictions.
     """
 
     identifier: str | None = None
@@ -109,3 +109,20 @@ class Rule(BaseModel):
     destinations: Annotated[list[RulePeer], Len(min_length=1)]
     filters: Annotated[list[RuleFilter], Len(min_length=1)]
     owners: set[str] = set()
+
+
+class NamedRule(Rule):
+    """A firewall rule with identifier required.
+
+    Attributes:
+        identifier (str): Rule name or id.
+        sources (list[RulePeer]): List of source IP addresses.
+        destinations (list[RulePeer]): List of destination IP addresses.
+        filters (list[RuleFilter]): List of sockets.
+        owners (set[str]): Owner tags.
+
+    Raises:
+        ValidationError: If data violates restrictions.
+    """
+
+    identifier: str
