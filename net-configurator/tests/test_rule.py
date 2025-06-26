@@ -3,14 +3,14 @@
 import pytest
 
 from net_configurator.rule import Rule
-from net_configurator.rule import RuleFilter
+from net_configurator.rule import NetworkService
 from net_configurator.rule import RulePeer
 
 
 @pytest.fixture
-def rule_filter() -> RuleFilter:
+def rule_filter() -> NetworkService:
     """Fixture returning a valid rule filter."""
-    return RuleFilter(protocol='tcp', port_low=80)
+    return NetworkService(protocol='tcp', port_low=80)
 
 
 @pytest.fixture(params=[[RulePeer(ip_low='1.1.1.1')], [RulePeer(ip_low='1.1.1.1'), RulePeer(ip_low='2.2.2.2'), RulePeer(ip_low='3.3.3.3')]])
@@ -19,13 +19,13 @@ def list_of_ips(request: pytest.FixtureRequest) -> list[RulePeer]:
     return request.param  # type: ignore[no-any-return]
 
 
-def test_rule_empty_source_raises(rule_filter: RuleFilter) -> None:
+def test_rule_empty_source_raises(rule_filter: NetworkService) -> None:
     """Rule invocation with empty source should raise error."""
     with pytest.raises(ValueError, match='List should have at least 1 item'):
         Rule(sources=[], destinations=['1.1.1.1'], filters=[rule_filter])
 
 
-def test_rule_empty_destination_raises(rule_filter: RuleFilter) -> None:
+def test_rule_empty_destination_raises(rule_filter: NetworkService) -> None:
     """Rule invocation with empty destination should raise error."""
     with pytest.raises(ValueError, match='List should have at least 1 item'):
         Rule(sources=['1.1.1.1'], destinations=[], filters=[rule_filter])
@@ -37,7 +37,7 @@ def test_rule_empty_filter_raises() -> None:
         Rule(sources=['1.1.1.1'], destinations=['1.1.1.1'], filters=[])
 
 
-def test_rule_source_number_and_type_of_elements(list_of_ips: list[RulePeer], rule_filter: RuleFilter) -> None:
+def test_rule_source_number_and_type_of_elements(list_of_ips: list[RulePeer], rule_filter: NetworkService) -> None:
     """Source should be a list of correct number of IPv4Address."""
     rule = Rule(sources=list_of_ips, destinations=list_of_ips, filters=[rule_filter])
     expected_number_of_ips = len(list_of_ips)
@@ -47,7 +47,7 @@ def test_rule_source_number_and_type_of_elements(list_of_ips: list[RulePeer], ru
         assert isinstance(source, RulePeer)
 
 
-def test_rule_destination_number_and_type_of_elements(list_of_ips: list[RulePeer], rule_filter: RuleFilter) -> None:
+def test_rule_destination_number_and_type_of_elements(list_of_ips: list[RulePeer], rule_filter: NetworkService) -> None:
     """Destinations should be a list of correct number of IPv4Address."""
     rule = Rule(sources=list_of_ips, destinations=list_of_ips, filters=[rule_filter])
     expected_number_of_ips = len(list_of_ips)
@@ -58,7 +58,7 @@ def test_rule_destination_number_and_type_of_elements(list_of_ips: list[RulePeer
 
 
 @pytest.mark.parametrize('number_of_filters', [1, 3])
-def test_filter_number_of_elements(rule_filter: RuleFilter, number_of_filters: int) -> None:
+def test_filter_number_of_elements(rule_filter: NetworkService, number_of_filters: int) -> None:
     """Filters should have correct number of elements."""
     rule = Rule(sources=[RulePeer(ip_low='1.1.1.1')], destinations=[RulePeer(ip_low='1.1.1.1')], filters=[rule_filter] * number_of_filters)
     assert isinstance(rule.filters, list)

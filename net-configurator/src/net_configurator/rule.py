@@ -12,7 +12,7 @@ from pydantic import field_validator
 from pydantic import ValidationInfo
 
 
-class RuleFilter(BaseModel):
+class NetworkService(BaseModel):
     """A protocol with (optionally) a port or a port range.
 
     Attributes:
@@ -57,6 +57,10 @@ class RuleFilter(BaseModel):
         return value
 
 
+class RuleFilter(BaseModel):
+    ...
+
+
 class RulePeer(BaseModel):
     """Single IP address or a range or a network.
 
@@ -97,7 +101,7 @@ class Rule(BaseModel):
         identifier (str, optional): Rule name or id.
         sources (list[RulePeer]): List of source IP addresses.
         destinations (list[RulePeer]): List of destination IP addresses.
-        filters (list[RuleFilter]): List of sockets.
+        filters (list[NetworkService]): List of sockets.
         owners (set[str]): Owner tags.
 
     Raises:
@@ -107,7 +111,7 @@ class Rule(BaseModel):
     identifier: str | None = None
     sources: Annotated[list[RulePeer], Len(min_length=1)]
     destinations: Annotated[list[RulePeer], Len(min_length=1)]
-    filters: Annotated[list[RuleFilter], Len(min_length=1)]
+    filters: Annotated[list[NetworkService], Len(min_length=1)]
     owners: set[str] = set()
 
 
@@ -118,7 +122,7 @@ class NamedRule(Rule):
         identifier (str): Rule name or id.
         sources (list[RulePeer]): List of source IP addresses.
         destinations (list[RulePeer]): List of destination IP addresses.
-        filters (list[RuleFilter]): List of sockets.
+        filters (list[NetworkService]): List of sockets.
         owners (set[str]): Owner tags.
 
     Raises:
