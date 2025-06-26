@@ -61,7 +61,7 @@ class RuleFilter(BaseModel):
     ...
 
 
-class RulePeer(BaseModel):
+class NetworkPeer(BaseModel):
     """Single IP address or a range or a network.
 
     Attributes:
@@ -99,8 +99,8 @@ class Rule(BaseModel):
 
     Attributes:
         identifier (str, optional): Rule name or id.
-        sources (list[RulePeer]): List of source IP addresses.
-        destinations (list[RulePeer]): List of destination IP addresses.
+        sources (list[NetworkPeer]): List of source IP addresses.
+        destinations (list[NetworkPeer]): List of destination IP addresses.
         filters (list[NetworkService]): List of sockets.
         owners (set[str]): Owner tags.
 
@@ -109,8 +109,8 @@ class Rule(BaseModel):
     """
 
     identifier: str | None = None
-    sources: Annotated[list[RulePeer], Len(min_length=1)]
-    destinations: Annotated[list[RulePeer], Len(min_length=1)]
+    sources: Annotated[list[NetworkPeer], Len(min_length=1)]
+    destinations: Annotated[list[NetworkPeer], Len(min_length=1)]
     filters: Annotated[list[NetworkService], Len(min_length=1)]
     owners: set[str] = set()
 
@@ -120,8 +120,8 @@ class NamedRule(Rule):
 
     Attributes:
         identifier (str): Rule name or id.
-        sources (list[RulePeer]): List of source IP addresses.
-        destinations (list[RulePeer]): List of destination IP addresses.
+        sources (list[NetworkPeer]): List of source IP addresses.
+        destinations (list[NetworkPeer]): List of destination IP addresses.
         filters (list[NetworkService]): List of sockets.
         owners (set[str]): Owner tags.
 
