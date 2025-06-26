@@ -8,8 +8,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from net_configurator.rule import Rule
 from net_configurator.rule import NetworkPeer
+from net_configurator.rule import Rule
 from net_configurator.rules_source import JSONFileReader
 from net_configurator.rules_source import ReaderInterface
 from net_configurator.rules_source import RulesSource
@@ -47,7 +47,7 @@ def test_rules_source_with_valid_input() -> None:
     """RulesSource with valid reader data gives valid output."""
     dummy_reader = Mock(spec=ReaderInterface)
     dummy_reader.read_all.return_value = [
-        {'sources': [NetworkPeer(ip_low='1.1.1.1')], 'destinations': [NetworkPeer(ip_low='2.2.2.2')], 'filters': [{'protocol': 'icmp'}]}
+        {'sources': [NetworkPeer(ip_low='1.1.1.1')], 'destinations': [NetworkPeer(ip_low='2.2.2.2')], 'filter': [{'protocol': 'icmp'}]}
     ]
     rules_source = RulesSource(dummy_reader)
     rules = rules_source.read_all()
