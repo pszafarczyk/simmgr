@@ -6,7 +6,7 @@ from net_configurator.namer import Namer
 
 
 @pytest.mark.parametrize(
-    'json_dump, expected_name',
+    'json_dump, expected_identifier',
     [
         ('', 'X-da39a3ee5e6b4b0d3255bfef95601890afd80709'),
         ('[]', 'X-97d170e1550eee4afc0af065b78cda302a97674c'),
@@ -15,7 +15,7 @@ from net_configurator.namer import Namer
         ('[\n  {\n    "g": "h"\n  }\n]', 'X-b5634d5772f590b6d8dc6e79daf6210dc397ca46'),
     ],
 )
-def test_generate_name(json_dump: str, expected_name: str) -> None:
-    """Correct name should be generated."""
-    result = Namer.generate_name(json_dump)
-    assert result == expected_name
+def test_generate_identifier(json_dump: str, expected_identifier: str) -> None:
+    """Correct identifier should be generated."""
+    result = Namer.generate_identifier(json_dump)
+    assert result == expected_identifier

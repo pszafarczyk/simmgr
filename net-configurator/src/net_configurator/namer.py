@@ -1,24 +1,24 @@
-"""Name generator."""
+"""Identifier generator."""
 
 import hashlib
 
-from net_configurator.constants import NAME_PREFIX
+from net_configurator.constants import IDENTIFIER_PREFIX
 
 
 class Namer:
-    """Name generator."""
+    """Identifier generator."""
 
     @staticmethod
-    def generate_name(json_dump: str) -> str:
-        """Return name for JSON string based on hash.
+    def generate_identifier(json_dump: str) -> str:
+        """Return identifier for JSON string based on hash.
 
         Args:
-            json_dump (str): String to generate name for.
+            json_dump (str): String to generate identifier for.
 
         Returns:
-            str: Generated name.
+            str: Generated identifier.
         """
         hasher = hashlib.sha1()  # noqa: S324
         hasher.update(json_dump.encode())
         rule_hash = hasher.hexdigest()
-        return f'{NAME_PREFIX}{rule_hash}'
+        return f'{IDENTIFIER_PREFIX}{rule_hash}'

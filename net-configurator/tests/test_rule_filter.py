@@ -7,7 +7,7 @@ from net_configurator.rule import RuleFilter
 
 
 @pytest.mark.parametrize(
-    'services, expected_name',
+    'services, expected_identifier',
     [
         ([NetworkService(protocol='tcp', port_low=443)], 'X-e7d78205b66768e343b3fd5821fbe7d3ad7f31a6'),
         (
@@ -16,16 +16,16 @@ from net_configurator.rule import RuleFilter
         ),
     ],
 )
-def test_rule_filter_has_correct_name(services: list[NetworkService], expected_name: str) -> None:
-    """Name attribute is as expected."""
+def test_rule_filter_has_correct_identifier(services: list[NetworkService], expected_identifier: str) -> None:
+    """Identifier attribute is as expected."""
     rule_filter = RuleFilter(services)
-    assert rule_filter.name == expected_name
+    assert rule_filter.identifier == expected_identifier
 
 
-def test_rule_filter_name_independent_of_order() -> None:
-    """Filter's name should be independent of services order."""
+def test_rule_filter_identifier_independent_of_order() -> None:
+    """Filter's identifier should be independent of services order."""
     service_icmp = NetworkService(protocol='icmp')
     service_tcp = NetworkService(protocol='tcp', port_low=80)
     filter_icmp_tcp = RuleFilter([service_icmp, service_tcp])
     filter_tcp_icmp = RuleFilter([service_tcp, service_icmp])
-    assert filter_icmp_tcp.name == filter_tcp_icmp.name
+    assert filter_icmp_tcp.identifier == filter_tcp_icmp.identifier
