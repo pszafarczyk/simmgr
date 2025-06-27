@@ -1,5 +1,6 @@
 """Tests for NetworkService class from `net_configurator.rule` module."""
 
+from pydantic import ValidationError
 import pytest
 
 from net_configurator.rule import NetworkService
@@ -20,7 +21,7 @@ def test_valid_protocol(protocol: str) -> None:
 
 def test_invalid_protocol_raises() -> None:
     """Invalid protocol should raise error."""
-    with pytest.raises(ValueError, match="Input should be 'tcp', 'udp' or 'icmp'"):
+    with pytest.raises(ValidationError, match="Input should be 'tcp', 'udp' or 'icmp'"):
         NetworkService(protocol='invalid', port_low=0)
 
 
@@ -34,13 +35,13 @@ def test_icmp_ignores_ports(port_low: int | None, port_high: int | None) -> None
 
 def test_tcpudp_without_port_raises(transport_protocol: str) -> None:
     """Invocation for TCP/UDP without port should raise error."""
-    with pytest.raises(ValueError, match='requires a port number'):
+    with pytest.raises(ValidationError, match='requires a port number'):
         NetworkService(protocol=transport_protocol)
 
 
 def test_tcpudp_with_none_port_raises(transport_protocol: str) -> None:
     """Invocation for TCP/UDP without port should raise error."""
-    with pytest.raises(ValueError, match='requires a port number'):
+    with pytest.raises(ValidationError, match='requires a port number'):
         NetworkService(protocol=transport_protocol, port_low=None)
 
 
@@ -63,24 +64,24 @@ def test_tcpudp_with_port_range(transport_protocol: str, port_low: int, port_hig
 @pytest.mark.parametrize('port_low', [-1, 65536])
 def test_tcpudp_invalid_port_low_raises(transport_protocol: str, port_low: int) -> None:
     """Invalid low port should raise error."""
-    with pytest.raises(ValueError, match='Input should be (greater|less) than or equal'):
+    with pytest.raises(ValidationError, match='Input should be (greater|less) than or equal'):
         NetworkService(protocol=transport_protocol, port_low=port_low)
 
 
 def test_tcpudp_invalid_port_high_raises(transport_protocol: str) -> None:
     """Invalid high port should raise error."""
-    with pytest.raises(ValueError, match='Input should be less than or equal'):
+    with pytest.raises(ValidationError, match='Input should be less than or equal'):
         NetworkService(protocol=transport_protocol, port_low=1, port_high=65536)
 
 
 def test_tcpudp_range_with_zero_raises(transport_protocol: str) -> None:
     """Port range starting with 0 should raise error."""
-    with pytest.raises(ValueError, match='Port 0 cannot be used in ranges'):
+    with pytest.raises(ValidationError, match='Port 0 cannot be used in ranges'):
         NetworkService(protocol=transport_protocol, port_low=0, port_high=21)
 
 
 @pytest.mark.parametrize('port_low, port_high', [(636, 389), (20, 0)])
 def test_inverted_range_raises(transport_protocol: str, port_low: int, port_high: int) -> None:
     """Port_low > port_high should raise error."""
-    with pytest.raises(ValueError, match='port_high cannot be lower than port_low'):
+    with pytest.raises(ValidationError, match='port_high cannot be lower than port_low'):
         NetworkService(protocol=transport_protocol, port_low=port_low, port_high=port_high)

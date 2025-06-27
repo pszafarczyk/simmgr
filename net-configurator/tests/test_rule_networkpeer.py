@@ -3,6 +3,7 @@
 from ipaddress import IPv4Address
 from ipaddress import IPv4Network
 
+from pydantic import ValidationError
 import pytest
 
 from net_configurator.rule import NetworkPeer
@@ -31,16 +32,16 @@ def test_single_address(ip_low: str, ip_high: str | None) -> None:
 
 
 def test_reversed_range_raises() -> None:
-    """NetworkPeer with reversed range raises ValueError."""
+    """NetworkPeer with reversed range raises ValidationError."""
     higher_ip = '172.31.1.2'
     lower_ip = '172.31.1.1'
-    with pytest.raises(ValueError, match='ip_high cannot be lower than ip_low'):
+    with pytest.raises(ValidationError, match='ip_high cannot be lower than ip_low'):
         NetworkPeer(ip_low=higher_ip, ip_high=lower_ip)
 
 
 def test_range_with_network_in_ip_low_raises() -> None:
-    """Range with network in ip_low raises ValueError."""
+    """Range with network in ip_low raises ValidationError."""
     net = '192.168.0.0/24'
     ip_high = '192.168.0.10'
-    with pytest.raises(ValueError, match='Range is not possible when ip_low is network address'):
+    with pytest.raises(ValidationError, match='Range is not possible when ip_low is network address'):
         NetworkPeer(ip_low=net, ip_high=ip_high)
