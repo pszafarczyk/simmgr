@@ -45,8 +45,7 @@ class NetworkService(BaseModel, frozen=True):
         port_high (int, optional): How end of port range.
 
     Raises:
-        ValidationError: When data violates basic restrictions.
-        ValueError: When ports are not valid.
+        ValidationError: When data violates restrictions.
     """
 
     protocol: Literal['tcp', 'udp', 'icmp']
@@ -98,8 +97,7 @@ class NetworkPeer(BaseModel):
         ip_high (IPv4Address): How end of IP range.
 
     Raises:
-        ValidationError: When data violates basic restrictions.
-        ValueError: When IPs are not valid.
+        ValidationError: When data violates restrictions.
     """
 
     ip_low: IPv4Address | IPv4Network
@@ -136,7 +134,6 @@ class Rule(IdentifiedBaseModel):
 
     Raises:
         ValidationError: If data violates restrictions.
-        ValueError: When IPs or ports are not valid.
     """
 
     sources: Annotated[list[NetworkPeer], Len(min_length=1), WrapSerializer(sort_before_serialization)]

@@ -60,8 +60,7 @@ class RulesSource:
             list[Rule]: Dict of Rule read from source.
 
         Raises:
-            ValidationError: If input data violates Rule's basic restrictions.
-            ValueError: If input data violates Rule's custom restrictions.
+            ValidationError: If input data violates Rule's restrictions.
             TypeError: If JSON data is not array.
             Exception: Other types raised by read_all of given reader.
         """

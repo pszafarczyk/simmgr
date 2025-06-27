@@ -1,5 +1,6 @@
 """Tests for Rule class from `net_configurator.rule` module."""
 
+from pydantic import ValidationError
 import pytest
 
 from net_configurator.rule import NetworkPeer
@@ -21,19 +22,19 @@ def list_of_ips(request: pytest.FixtureRequest) -> list[NetworkPeer]:
 
 def test_rule_empty_source_raises(rule_filter: NetworkService) -> None:
     """Rule invocation with empty source should raise error."""
-    with pytest.raises(ValueError, match='List should have at least 1 item'):
+    with pytest.raises(ValidationError, match='List should have at least 1 item'):
         Rule(sources=[], destinations=['1.1.1.1'], filter=[rule_filter])
 
 
 def test_rule_empty_destination_raises(rule_filter: NetworkService) -> None:
     """Rule invocation with empty destination should raise error."""
-    with pytest.raises(ValueError, match='List should have at least 1 item'):
+    with pytest.raises(ValidationError, match='List should have at least 1 item'):
         Rule(sources=['1.1.1.1'], destinations=[], filter=[rule_filter])
 
 
 def test_rule_empty_filter_raises() -> None:
     """Rule invocation with empty filter should raise error."""
-    with pytest.raises(ValueError, match='List should have at least 1 item'):
+    with pytest.raises(ValidationError, match='List should have at least 1 item'):
         Rule(sources=['1.1.1.1'], destinations=['1.1.1.1'], filter=[])
 
 
