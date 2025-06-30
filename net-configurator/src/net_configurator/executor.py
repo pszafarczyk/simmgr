@@ -1,5 +1,7 @@
 """Classes for executing commands on the firewall."""
 
+import contextlib
+
 from netmiko import BaseConnection
 from netmiko import ConnectHandler
 from netmiko import NetmikoAuthenticationException
@@ -86,7 +88,7 @@ class Executor:
 
     def __del__(self):
         """Ensure disconnection when the object is garbage collected."""
-        if self.__connection:
+        with contextlib.suppress(Exception):
             self.__connection.send_command('exit', expect_string='')
 
     def __enter__(self):
