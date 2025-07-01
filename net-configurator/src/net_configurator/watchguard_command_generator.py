@@ -1,80 +1,148 @@
-"""Classes for generating watchguard specific commands."""
-from rule import NamedRule
-from rule import RuleFilter
+"""Classes for generating WatchGuard-specific commands."""
+
+from rule import Rule, RuleFilter, NetworkPeer
+from contextlib import contextmanager
+
+
+class RuleFormatter:
+    @staticmethod
+    @contextmanager
+    def config(commands: list[str]):
+        commands.append('config')
+        try:
+            yield
+        finally:
+            commands.append('exit')
+
+    @staticmethod
+    @contextmanager
+    def policy(commands: list[str]):
+        commands.append('policy')
+        try:
+            yield
+        finally:
+            commands.append('exit')
+
+    @staticmethod
+    @contextmanager
+    def rule(commands: list[str], name: str):
+        commands.append(f'rule {name}')
+        try:
+            yield
+        finally:
+            commands.append('exit')
+
+    @staticmethod
+    @contextmanager
+    def filter(commands: list[str], name: str):
+        commands.append(f'policy-type {name}')
+        try:
+            yield
+        finally:
+            commands.append('exit')
+
+    @staticmethod
+    def build_network(networks: list[NetworkPeer]) -> str:
+        parts = []
+        for network in networks:
+            if network.is_ip():
+                parts.append(f"host-ip {network.ip_low}")
+            elif network.is_range():
+                parts.append(f"range {network.ip_low} {network.ip_high}")
+            elif network.is_network():
+                parts.append(f"network {network.ip_low}")
+        return ' '.join(parts)
+
+    @staticmethod
+    def build_from(rule: Rule) -> str:
+        return f'from {RuleFormatter.build_network(rule.sources)}'
+
+    @staticmethod
+    def build_to(rule: Rule) -> str:
+        return f'to {RuleFormatter.build_network(rule.destinations)}'
 
 
 class WatchguardCommandGenerator:
-    """Watchguard specific command generator."""
+    """WatchGuard-specific command generator."""
 
-    def add_rule(self, rule: NamedRule) -> list[str]:
-        """Generate add Rule command.
+    @staticmethod
+    def add_rule(rule: Rule) -> list[str]:
+        """Generate commands to add a rule."""
+        commands = []
+        with RuleFormatter.config(commands), \
+             RuleFormatter.policy(commands), \
+             RuleFormatter.rule(commands, rule.identifier):
 
-        Args:
-            rule (NamedRule): NamedRule object to add.
+            commands.append(
+                f'policy-type {rule.filter.identifier} '
+                f'{RuleFormatter.build_from(rule)} '
+                f'{RuleFormatter.build_to(rule)}'
+            )
+            commands.append('apply')
 
-        Returns:
-            str: A list of generated commands.
-        """
-        command = []
-        """
-            f'policy add name Rule_{rule.identifier} '
+        return commands
 
-            f'policy-type {rule.name}-policy '
-            f'from '
-        for sorce in rule.sources:
-        for destination in rule.destinations:
-            
-            f'to host-range {rule.destination[0]} {rule.destination[-1]} '
-            f'port {rule.port} protocol {rule.protocol} '
-            f'action {rule.action} enable'
-        """
-
-    def delete_rule(self, name: str) -> list[str]:
-        """Generate delete Rule command.
+    @staticmethod
+    def delete_rule(name: str) -> list[str]:
+        """Generate command to delete a rule.
 
         Args:
-            names (str): Rule name to delete.
+            name (str): Rule name to delete.
 
         Returns:
-            str: A list of generated commands.
+            list[str]: A list of generated commands.
         """
-        command = []
-    def read_rules(self) -> str:
-        """Generate read Rulles command.
+        return [f'no rule {name}']
+
+    @staticmethod
+    def read_rules() -> str:
+        """Generate command to read all rules.
 
         Returns:
             str: A generated command.
         """
-        command = 'show policy-type'
-        return command
+        return 'show rule'
 
-    def add_filter(self, rule: RuleFilter) -> list[str]:
-        """Generate add Filter command.
-
-        Args:
-            rules (list[NamedRule]): A list of NamedRule objects to be added.
-
-        Returns:
-            str: A list of generated command.
-        """
-
-    def delete_filter(self, name: str) -> list[str]:
-        """Add delete Rule order to the queue.
+    @staticmethod
+    def add_filter(filter: RuleFilter) -> list[str]:
+        """Generate commands to add a filter.
 
         Args:
-            names (list[str]): A list of rule names to delete.
+            rule_filter (RuleFilter): The filter to be added.
 
         Returns:
-            str: A list of generated commands.
+            list[str]: A list of generated commands.
         """
+        commands = []
+        with RuleFormatter.config(commands), \
+             RuleFormatter.policy(commands), \
+             RuleFormatter.filter(commands, filter.identifier):
 
-    def read_managed_filters(self) -> str:
-        """Retrieve the list of Rules currently managed by this manager.
+            commands.append(
+                f'protocol '
+            )
+            commands.append('apply')
+
+        return commands
+
+    @staticmethod
+    def delete_filter(name: str) -> list[str]:
+        """Generate command to delete a filter.
+
+        Args:
+            name (str): Name of the filter to delete.
+
+        Returns:
+            list[str]: A list of generated commands.
+        """
+        return [f'no policy-type {name}']
+
+    @staticmethod
+    def read_filters() -> str:
+        """Generate command to list managed filters.
 
         Returns:
             str: A generated command.
         """
-        command = 'show policy-type'
-        return command
-
+        return 'show policy-type'
 
