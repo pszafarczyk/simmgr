@@ -19,10 +19,11 @@ def test_valid_protocol(protocol: str) -> None:
     assert packet_filter.protocol == protocol
 
 
-def test_invalid_protocol_raises() -> None:
+@pytest.mark.parametrize('protocol', ['invalid', '', None])
+def test_invalid_protocol_raises(protocol: str) -> None:
     """Invalid protocol should raise error."""
     with pytest.raises(ValidationError, match="Input should be 'tcp', 'udp' or 'icmp'"):
-        NetworkService(protocol='invalid', port_low=0)
+        NetworkService(protocol=protocol, port_low=0)
 
 
 @pytest.mark.parametrize('port_low, port_high', [(None, None), (80, None), (443, 443), (8080, 8088)])
@@ -85,3 +86,48 @@ def test_inverted_range_raises(transport_protocol: str, port_low: int, port_high
     """Port_low > port_high should raise error."""
     with pytest.raises(ValidationError, match='port_high cannot be lower than port_low'):
         NetworkService(protocol=transport_protocol, port_low=port_low, port_high=port_high)
+
+
+@pytest.mark.parametrize('port_low, port_high', [(27017, None), (27017, 27018)])
+def test_has_port_when_port_set(port_low: int, port_high: int | None) -> None:
+    """Has_port should return True for single port or range."""
+    network_service = NetworkService(protocol='tcp', port_low=port_low, port_high=port_high)
+    result = network_service.has_port()
+    assert result
+
+
+def test_has_port_when_port_not_set() -> None:
+    """Has_port should return False for protocol without port."""
+    network_service = NetworkService(protocol='icmp')
+    result = network_service.has_port()
+    assert not result
+
+
+def test_is_port_single_when_port_single() -> None:
+    """Is_port_single should return True when single port set."""
+    network_service = NetworkService(protocol='tcp', port_low=27017)
+    result = network_service.is_port_single()
+    assert result
+
+
+@pytest.mark.parametrize('protocol, port_low, port_high', [('icmp', None, None), ('tcp', 27017, 27018)])
+def test_is_port_single_when_port_not_single(protocol: str, port_low: int | None, port_high: int | None) -> None:
+    """Is_port_single should return False when port range set."""
+    network_service = NetworkService(protocol=protocol, port_low=port_low, port_high=port_high)
+    result = network_service.is_port_single()
+    assert not result
+
+
+def test_is_port_range_when_port_range() -> None:
+    """Is_port_range should return True when port range set."""
+    network_service = NetworkService(protocol='tcp', port_low=27017, port_high=27018)
+    result = network_service.is_port_range()
+    assert result
+
+
+@pytest.mark.parametrize('protocol, port_low', [('icmp', None), ('tcp', 27017)])
+def test_is_port_range_when_port_not_range(protocol: str, port_low: int | None) -> None:
+    """Is_port_range should return False when single port set."""
+    network_service = NetworkService(protocol=protocol, port_low=port_low)
+    result = network_service.is_port_range()
+    assert not result
