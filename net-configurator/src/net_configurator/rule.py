@@ -5,6 +5,7 @@ from ipaddress import IPv4Address
 from ipaddress import IPv4Network
 from typing import Annotated
 from typing import Any
+from typing import cast
 from typing import Literal
 
 from annotated_types import Len
@@ -36,7 +37,7 @@ def sort_before_serialization(value: list[BaseModel], handler: Callable[[list[Ba
     return handler(sorted_value, info)
 
 
-class NetworkService(BaseModel, frozen=True):
+class NetworkService(BaseModel):
     """A protocol with (optionally) a port or a port range.
 
     Attributes:
@@ -56,9 +57,10 @@ class NetworkService(BaseModel, frozen=True):
     @classmethod
     def tcpudp_has_port_low(cls, value: int | None, info: ValidationInfo) -> int | None:
         """Verifies port is specified for transport protocols and deletes for ICMP."""
-        if info.data.get('protocol') == 'icmp':
+        protocol: str = cast(str, info.data.get('protocol'))
+        if protocol == 'icmp':
             value = None
-        elif value is None:
+        elif (protocol in {'tcp', 'udp'}) and value is None:
             msg = 'TCP/UDP requires a port number'
             raise ValueError(msg)
         return value
@@ -78,6 +80,18 @@ class NetworkService(BaseModel, frozen=True):
                 msg = 'Port 0 cannot be used in ranges'
                 raise ValueError(msg)
         return value
+
+    def has_port(self) -> bool:
+        """Returns True when NetworkService has port(s) specified."""
+        return self.port_low is not None
+
+    def is_port_single(self) -> bool:
+        """Returns True when NetworkService has single port."""
+        return self.has_port() and self.port_high is None
+
+    def is_port_range(self) -> bool:
+        """Returns True when NetworkService has range of ports."""
+        return self.has_port() and self.port_high is not None
 
 
 class RuleFilter(RootModel[list[NetworkService]], IdentifiedBaseModel):
@@ -119,6 +133,18 @@ class NetworkPeer(BaseModel):
             if value == ip_low:
                 return_value = None
         return return_value
+
+    def is_address_network(self) -> bool:
+        """Returns True when NetworkPeer is network address."""
+        return isinstance(self.ip_low, IPv4Network)
+
+    def is_address_single(self) -> bool:
+        """Returns True when NetworkPeer is single IP address."""
+        return not self.is_address_network() and self.ip_high is None
+
+    def is_address_range(self) -> bool:
+        """Returns True when NetworkPeer is range of addresses."""
+        return not self.is_address_network() and self.ip_high is not None
 
 
 class Rule(IdentifiedBaseModel):
