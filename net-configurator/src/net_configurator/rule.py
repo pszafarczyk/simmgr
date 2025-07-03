@@ -1,10 +1,8 @@
 """Classes for storing firewall rules."""
 
-from collections.abc import Callable
 from ipaddress import IPv4Address
 from ipaddress import IPv4Network
 from typing import Annotated
-from typing import Any
 from typing import cast
 from typing import Literal
 
@@ -14,9 +12,7 @@ from pydantic import computed_field
 from pydantic import Field
 from pydantic import field_validator
 from pydantic import RootModel
-from pydantic import SerializationInfo
 from pydantic import ValidationInfo
-from pydantic import WrapSerializer
 
 from net_configurator.namer import Namer
 
@@ -31,7 +27,7 @@ class IdentifiedBaseModel(BaseModel):
         return Namer.generate_identifier(self.model_dump_json(exclude={'identifier'}))
 
     @classmethod
-    def sort_unique(cls, value: tuple[BaseModel]) -> tuple[BaseModel]:
+    def sort_unique(cls, value: tuple[BaseModel, ...]) -> tuple[BaseModel, ...]:
         """Returns argument as sorted tuple of unique elements."""
         return tuple(sorted(set(value), key=lambda service: service.model_dump_json()))
 
@@ -103,12 +99,12 @@ class RuleFilter(RootModel[tuple[NetworkService, ...]], IdentifiedBaseModel, fro
 
     @field_validator('root', mode='after')
     @classmethod
-    def services_are_unique_and_sorted(cls, value: tuple[NetworkService]) -> tuple[NetworkService]:
+    def services_are_unique_and_sorted(cls, value: tuple[NetworkService, ...]) -> tuple[NetworkService, ...]:
         """Ensures services are unique and sorted."""
-        return RuleFilter.sort_unique(value)
+        return cast(tuple[NetworkService, ...], RuleFilter.sort_unique(value))
 
 
-class NetworkPeer(BaseModel, frozen = True):
+class NetworkPeer(BaseModel, frozen=True):
     """Single IP address or range or network.
 
     Attributes:
@@ -170,16 +166,18 @@ class Rule(IdentifiedBaseModel, frozen=True):
     sources: Annotated[tuple[NetworkPeer, ...], Len(min_length=1)]
     destinations: Annotated[tuple[NetworkPeer, ...], Len(min_length=1)]
     filter: RuleFilter
-    owners: tuple[str] = tuple()
+    owners: tuple[str] | None = None
 
     @field_validator('sources', 'destinations', mode='after')
     @classmethod
-    def addresses_are_unique_and_sorted(cls, value: tuple[NetworkPeer]) -> tuple[NetworkPeer]:
+    def addresses_are_unique_and_sorted(cls, value: tuple[NetworkPeer, ...]) -> tuple[NetworkPeer, ...]:
         """Ensures addresses are unique and sorted."""
-        return Rule.sort_unique(value)
+        return cast(tuple[NetworkPeer, ...], Rule.sort_unique(value))
 
     @field_validator('owners', mode='after')
     @classmethod
-    def owners_are_unique_and_sorted(cls, value: tuple[str]) -> tuple[str]:
+    def owners_are_unique_and_sorted(cls, value: tuple[str, ...] | None) -> tuple[str, ...] | None:
         """Ensures addresses are unique and sorted."""
+        if value is None:
+            return None
         return tuple(sorted(set(value)))
