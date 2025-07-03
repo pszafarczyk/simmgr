@@ -3,6 +3,7 @@
 from ipaddress import IPv4Address
 from ipaddress import IPv4Network
 from typing import Annotated
+from typing import Any
 from typing import cast
 from typing import Literal
 
@@ -166,7 +167,7 @@ class Rule(IdentifiedBaseModel, frozen=True):
     sources: Annotated[tuple[NetworkPeer, ...], Len(min_length=1)]
     destinations: Annotated[tuple[NetworkPeer, ...], Len(min_length=1)]
     filter: RuleFilter
-    owners: tuple[str] | None = None
+    owners: tuple[str, ...] = ()
 
     @field_validator('sources', 'destinations', mode='after')
     @classmethod
@@ -174,9 +175,17 @@ class Rule(IdentifiedBaseModel, frozen=True):
         """Ensures addresses are unique and sorted."""
         return cast(tuple[NetworkPeer, ...], Rule.sort_unique(value))
 
+    @field_validator('owners', mode='before')
+    @classmethod
+    def owners_none_to_tuple(cls, value: Any) -> Any:
+        """None value for owners is convertet to empty tuple."""
+        if value is None:
+            return ()
+        return value
+
     @field_validator('owners', mode='after')
     @classmethod
-    def owners_are_unique_and_sorted(cls, value: tuple[str, ...] | None) -> tuple[str, ...] | None:
+    def owners_are_unique_and_sorted(cls, value: tuple[str, ...]) -> tuple[str, ...]:
         """Ensures addresses are unique and sorted."""
         if value is None:
             return None
