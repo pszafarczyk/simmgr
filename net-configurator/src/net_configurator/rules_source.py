@@ -53,15 +53,15 @@ class RulesSource:
         """Sets the source."""
         self.__source = source
 
-    def read_all(self) -> list[Rule]:
-        """Returns dict of rules from external source.
+    def read_all(self) -> set[Rule]:
+        """Returns set of rules from external source.
 
         Returns:
-            list[Rule]: Dict of Rule read from source.
+            set[Rule]: Rules read from source.
 
         Raises:
             ValidationError: If input data violates Rule's restrictions.
             TypeError: If JSON data is not array.
             Exception: Other types raised by read_all of given reader.
         """
-        return [Rule(**rule) for rule in self.__source.read_all()]
+        return set([Rule(**rule) for rule in self.__source.read_all()])
