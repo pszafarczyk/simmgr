@@ -47,7 +47,7 @@ class JSONFileReader:
 
 
 class RulesSource:
-    """Source of input rules."""
+    """Source of rules read with given ReaderInterface."""
 
     def __init__(self, source: ReaderInterface) -> None:
         """Sets the source."""
