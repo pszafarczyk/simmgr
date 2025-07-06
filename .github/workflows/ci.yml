@@ -45,6 +45,10 @@ jobs:
         working-directory: ${{ matrix.project }}
         run: poetry run mypy
 
+      - name: Run complexipy
+        working-directory: ${{ matrix.project }}
+        run: poetry run complexipy .  
+
   test:
     name: Test
     runs-on: ubuntu-latest

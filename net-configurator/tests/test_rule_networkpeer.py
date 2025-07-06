@@ -45,3 +45,52 @@ def test_range_with_network_in_ip_low_raises() -> None:
     ip_high = '192.168.0.10'
     with pytest.raises(ValidationError, match='Range is not possible when ip_low is network address'):
         NetworkPeer(ip_low=net, ip_high=ip_high)
+
+
+def test_is_address_network_when_network() -> None:
+    """Is_address_network should return True when peer is network."""
+    ip_low = IPv4Network('10.0.0.0/8')
+    network_peer = NetworkPeer(ip_low=ip_low)
+    result = network_peer.is_address_network()
+    assert result
+
+
+@pytest.mark.parametrize('ip_low, ip_high', [('10.0.0.1', None), ('10.0.0.1', '10.0.0.10')])
+def test_is_address_network_when_not_network(ip_low: str, ip_high: str | None) -> None:
+    """Is_address_network should return True when peer is single or range."""
+    network_peer = NetworkPeer(ip_low=ip_low, ip_high=ip_high)
+    result = network_peer.is_address_network()
+    assert not result
+
+
+def test_is_address_single_when_single() -> None:
+    """Is_address_single should return True when peer is single IP."""
+    ip_low = IPv4Address('10.0.0.1')
+    network_peer = NetworkPeer(ip_low=ip_low)
+    result = network_peer.is_address_single()
+    assert result
+
+
+@pytest.mark.parametrize('ip_low, ip_high', [('10.0.0.0/8', None), ('10.0.0.1', '10.0.0.10')])
+def test_is_address_single_when_not_single(ip_low: str, ip_high: str | None) -> None:
+    """Is_address_single should return False when peer is network or range."""
+    network_peer = NetworkPeer(ip_low=ip_low, ip_high=ip_high)
+    result = network_peer.is_address_single()
+    assert not result
+
+
+def test_is_address_range_when_range() -> None:
+    """Is_address_range should return True when peer is range."""
+    ip_low = IPv4Address('10.0.0.1')
+    ip_high = IPv4Address('10.0.0.10')
+    network_peer = NetworkPeer(ip_low=ip_low, ip_high=ip_high)
+    result = network_peer.is_address_range()
+    assert result
+
+
+@pytest.mark.parametrize('ip_low', ['10.0.0.0/8', '10.0.0.1'])
+def test_is_address_range_when_not_range(ip_low: str) -> None:
+    """Is_address_range should return False when peer is network or single."""
+    network_peer = NetworkPeer(ip_low=ip_low)
+    result = network_peer.is_address_range()
+    assert not result
