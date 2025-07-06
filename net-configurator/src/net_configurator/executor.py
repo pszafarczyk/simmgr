@@ -55,11 +55,11 @@ class NoConnectionError(ExecutorBaseError):
 
 
 class ExecuteError(ExecutorBaseError):
-    """Raised when the connection is still active after 'exit' was sent."""
+    """Raised when the command didn't produce expected effect."""
 
     def __init__(self):
-        """Initialize still-connected error."""
-        super().__init__('There is no connection.')
+        """Initialize execut error."""
+        super().__init__('Command failed.')
 
 
 class Executor:
@@ -102,7 +102,7 @@ class Executor:
 
     def connect(self) -> None:
         """Establish connection."""
-        if self.__connection is None:
+        if self.__connection is None or not self.__connection.is_alive():
             try:
                 self.__connection = ConnectHandler(**self.__device)
             except NetmikoTimeoutException as err:
@@ -112,7 +112,7 @@ class Executor:
 
     def disconnect(self):
         """Send 'exit' and wait until the connection is closed."""
-        if self.__connection:
+        if self.__connection is not None and self.__connection.is_alive():
             self.__connection.send_command('exit', expect_string='')
             try:
                 self._wait_for_disconnect()
@@ -123,12 +123,12 @@ class Executor:
     @retry(stop=stop_after_delay(10), wait=wait_fixed(0.5))
     def _wait_for_disconnect(self):
         """Retry until connection is inactive."""
-        if self.__connection.is_alive():
+        if self.__connection is not None and self.__connection.is_alive():
             raise DisconnectTimeoutError
 
     def execute(self, command: str) -> str:
         """Execute command and return structured output."""
-        if self.__connection is None:
+        if self.__connection is None or not self.__connection.is_alive():
             raise NoConnectionError
         try:
             return self.__connection.send_command(command)
