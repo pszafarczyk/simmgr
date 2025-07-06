@@ -1,101 +1,130 @@
+"""Tests for Executor class."""
+
+# ruff: noqa: SLF001
+from unittest.mock import Mock
+
+from netmiko import BaseConnection
+from netmiko import NetmikoAuthenticationException
+from netmiko import NetmikoTimeoutException
 import pytest
-from unittest.mock import patch, MagicMock
-from net_configurator.executor import Executor, ConnectionTimeoutError, AuthenticationError, DisconnectTimeoutError, NoConnectionError, ExecuteError
-from netmiko import NetmikoTimeoutException, NetmikoAuthenticationException
 from tenacity import RetryError
 
-DEVICE_CONFIG = {
-    "device_type": "watchguard_fireware",
-    "host": "10.0.0.1",
-    "username": "admin",
-    "password": "password",
-}
+from net_configurator.executor import AuthenticationError
+from net_configurator.executor import ConnectionTimeoutError
+from net_configurator.executor import DisconnectTimeoutError
+from net_configurator.executor import ExecuteError
+from net_configurator.executor import Executor
+from net_configurator.executor import NoConnectionError
 
 
-@patch("net_configurator.executor.ConnectHandler")
-def test_successful_connection_and_execution(mock_connect_handler):
-    mock_conn = MagicMock()
-    mock_conn.send_command.return_value = "Command output"
-    mock_conn.is_alive.return_value = False
-    mock_connect_handler.return_value = mock_conn
+@pytest.fixture
+def device_config() -> dict[str, str]:
+    """Provide a sample device configuration dictionary."""
+    return {
+        'ip': '192.168.1.1',
+        'username': 'admin',
+        'password': 'password',
+        'device_type': 'watchguard_fireware',
+    }
 
-    executor = Executor(DEVICE_CONFIG)
+
+@pytest.fixture
+def mock_connection() -> Mock:
+    """Create a mocked BaseConnection object with default behavior."""
+    mock_conn = Mock(spec=BaseConnection)
+    mock_conn.is_alive.return_value = True
+    mock_conn.send_command.return_value = 'command output'
+    return mock_conn
+
+
+@pytest.fixture
+def executor(device_config: dict[str, str], mocker: any, mock_connection: Mock) -> Executor:
+    """Create an Executor instance with mocked ConnectHandler."""
+    mocker.patch('net_configurator.executor.ConnectHandler', return_value=mock_connection)
+    return Executor(device_config)
+
+
+def test_initialization(device_config: dict[str, str]) -> None:
+    """Verify Executor initializes with no connection and correct device config."""
+    executor = Executor(device_config)
+    assert executor._Executor__connection is None
+    assert executor._Executor__device == device_config
+
+
+def test_connect_success(executor: Executor, mock_connection: Mock) -> None:
+    """Verify connect establishes a connection successfully."""
+    executor._Executor__connection = None
     executor.connect()
-    output = executor.execute("show rule")
-    assert output == "Command output"
+    assert executor._Executor__connection == mock_connection
 
-    executor.disconnect()
-    mock_conn.send_command.assert_called_with("exit", expect_string="")
+
+def test_connect_timeout(mocker: any, device_config: dict[str, str]) -> None:
+    """Verify connect raises ConnectionTimeoutError on timeout."""
+    mocker.patch('net_configurator.executor.ConnectHandler', side_effect=NetmikoTimeoutException('Connection timeout'))
+    executor = Executor(device_config)
+    with pytest.raises(ConnectionTimeoutError, match='Cannot connect to device'):
+        executor.connect()
+
+
+def test_connect_authentication_failure(mocker: any, device_config: dict[str, str]) -> None:
+    """Verify connect raises AuthenticationError on authentication failure."""
+    mocker.patch('net_configurator.executor.ConnectHandler', side_effect=NetmikoAuthenticationException('Auth failed'))
+    executor = Executor(device_config)
+    with pytest.raises(AuthenticationError, match='Cannot connect to device due to authentication problem'):
+        executor.connect()
+
+
+def test_context_manager(executor: Executor, mock_connection: Mock, mocker: any) -> None:
+    """Verify context manager connects and disconnects properly."""
+    mocker.patch('net_configurator.executor.Executor._wait_for_disconnect')
+    with executor as ex:
+        assert ex._Executor__connection == mock_connection
+    mock_connection.send_command.assert_called_once_with('exit', expect_string='')
     assert executor._Executor__connection is None
 
 
-@patch("net_configurator.executor.ConnectHandler", side_effect=NetmikoTimeoutException)
-def test_connection_timeout(mock_connect_handler):
-    executor = Executor(DEVICE_CONFIG)
-    with pytest.raises(ConnectionTimeoutError):
-        executor.connect()
-
-
-@patch("net_configurator.executor.ConnectHandler", side_effect=NetmikoAuthenticationException)
-def test_authentication_failure(mock_connect_handler):
-    executor = Executor(DEVICE_CONFIG)
-    with pytest.raises(AuthenticationError):
-        executor.connect()
-
-
-@patch("net_configurator.executor.ConnectHandler")
-def test_disconnect_timeout(mock_connect_handler):
-    mock_conn = MagicMock()
-    mock_conn.send_command.return_value = ""
-    mock_conn.is_alive.side_effect = [True] * 21  # Simulate always alive
-    mock_connect_handler.return_value = mock_conn
-
-    executor = Executor(DEVICE_CONFIG)
+def test_disconnect_success(executor: Executor, mock_connection: Mock, mocker: any) -> None:
+    """Verify disconnect closes the connection successfully."""
+    mocker.patch('net_configurator.executor.Executor._wait_for_disconnect')
     executor.connect()
+    executor.disconnect()
+    mock_connection.send_command.assert_called_once_with('exit', expect_string='')
+    assert executor._Executor__connection is None
 
-    with pytest.raises(DisconnectTimeoutError):
+
+def test_disconnect_timeout(executor: Executor, mocker: any) -> None:
+    """Verify disconnect raises DisconnectTimeoutError on timeout."""
+    mocker.patch('net_configurator.executor.Executor._wait_for_disconnect', side_effect=RetryError('Timed out'))
+    executor.connect()
+    with pytest.raises(DisconnectTimeoutError, match='SSH connection did not close in time after 20 retries'):
         executor.disconnect()
 
 
-def test_execute_without_connection():
-    executor = Executor(DEVICE_CONFIG)
-    with pytest.raises(NoConnectionError):
-        executor.execute("show ip int brief")
+def test_execute_no_connection(executor: Executor) -> None:
+    """Verify execute raises NoConnectionError when not connected."""
+    executor._Executor__connection = None
+    with pytest.raises(NoConnectionError, match='There is no connection'):
+        executor.execute('show version')
 
 
-@patch("net_configurator.executor.ConnectHandler")
-def test_execute_command_failure(mock_connect_handler):
-    mock_conn = MagicMock()
-    mock_conn.send_command.side_effect = Exception("Something failed")
-    mock_conn.is_alive.return_value = False
-    mock_connect_handler.return_value = mock_conn
-
-    executor = Executor(DEVICE_CONFIG)
+def test_execute_success(executor: Executor, mock_connection: Mock) -> None:
+    """Verify execute returns command output when connected."""
     executor.connect()
-
-    with pytest.raises(ExecuteError):
-        executor.execute("bad command")
-
-
-@patch("net_configurator.executor.ConnectHandler")
-def test_context_manager_success(mock_connect_handler):
-    mock_conn = MagicMock()
-    mock_conn.send_command.return_value = "done"
-    mock_conn.is_alive.return_value = False
-    mock_connect_handler.return_value = mock_conn
-
-    with Executor(DEVICE_CONFIG) as executor:
-        result = executor.execute("test command")
-        assert result == "done"
-    mock_conn.send_command.assert_any_call("exit", expect_string="")
+    result = executor.execute('show version')
+    assert result == 'command output'
+    mock_connection.send_command.assert_called_once_with('show version')
 
 
-@patch("net_configurator.executor.ConnectHandler")
-def test_del_calls_exit(mock_connect_handler):
-    mock_conn = MagicMock()
-    mock_connect_handler.return_value = mock_conn
-    executor = Executor(DEVICE_CONFIG)
+def test_execute_command_failure(executor: Executor, mock_connection: Mock) -> None:
+    """Verify execute raises ExecuteError on command failure."""
+    mock_connection.send_command.side_effect = Exception('Command failed.')
     executor.connect()
-    del executor
-    mock_conn.send_command.assert_called_with("exit", expect_string="")
+    with pytest.raises(ExecuteError, match='Command failed.'):
+        executor.execute('show version')
 
+
+def test_destructor_disconnects(executor: Executor, mock_connection: Mock) -> None:
+    """Verify destructor disconnects the active connection."""
+    executor._Executor__connection = mock_connection
+    executor.__del__()
+    mock_connection.send_command.assert_called_once_with('exit', expect_string='')
