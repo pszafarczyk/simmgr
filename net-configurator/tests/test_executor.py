@@ -2,14 +2,14 @@
 
 # ruff: noqa: SLF001
 from unittest.mock import Mock
-from typing import Any, Dict
 
 from netmiko import BaseConnection
 from netmiko import NetmikoAuthenticationException
 from netmiko import NetmikoTimeoutException
 import pytest
-from pytest_mock import MockerFixture  
-from tenacity import RetryError, Future
+from pytest_mock import MockerFixture
+from tenacity import Future
+from tenacity import RetryError
 
 from net_configurator.executor import AuthenticationError
 from net_configurator.executor import ConnectionTimeoutError
@@ -20,7 +20,7 @@ from net_configurator.executor import NoConnectionError
 
 
 @pytest.fixture
-def device_config() -> Dict[str, str]:
+def device_config() -> dict[str, str]:
     """Provide a sample device configuration dictionary."""
     return {
         'ip': '192.168.1.1',
@@ -40,16 +40,16 @@ def mock_connection() -> Mock:
 
 
 @pytest.fixture
-def executor(device_config: Dict[str, str], mocker: MockerFixture, mock_connection: Mock) -> Executor:
+def executor(device_config: dict[str, str], mocker: MockerFixture, mock_connection: Mock) -> Executor:
     """Create an Executor instance with mocked ConnectHandler."""
     mocker.patch('net_configurator.executor.ConnectHandler', return_value=mock_connection)
     return Executor(device_config)
 
 
-def test_initialization(device_config: Dict[str, str]) -> None:
+def test_initialization(device_config: dict[str, str]) -> None:
     """Verify Executor initializes with no connection and correct device config."""
     executor = Executor(device_config)
-    assert executor.__dict__.get('_Executor__connection') is None  
+    assert executor.__dict__.get('_Executor__connection') is None
     assert executor.__dict__.get('_Executor__device') == device_config
 
 
@@ -59,7 +59,7 @@ def test_connect_success(executor: Executor, mock_connection: Mock) -> None:
     assert executor.__dict__.get('_Executor__connection') == mock_connection
 
 
-def test_connect_timeout(mocker: MockerFixture, device_config: Dict[str, str]) -> None:
+def test_connect_timeout(mocker: MockerFixture, device_config: dict[str, str]) -> None:
     """Verify connect raises ConnectionTimeoutError on timeout."""
     mocker.patch('net_configurator.executor.ConnectHandler', side_effect=NetmikoTimeoutException('Connection timeout'))
     executor = Executor(device_config)
@@ -67,7 +67,7 @@ def test_connect_timeout(mocker: MockerFixture, device_config: Dict[str, str]) -
         executor.connect()
 
 
-def test_connect_authentication_failure(mocker: MockerFixture, device_config: Dict[str, str]) -> None:
+def test_connect_authentication_failure(mocker: MockerFixture, device_config: dict[str, str]) -> None:
     """Verify connect raises AuthenticationError on authentication failure."""
     mocker.patch('net_configurator.executor.ConnectHandler', side_effect=NetmikoAuthenticationException('Auth failed'))
     executor = Executor(device_config)
