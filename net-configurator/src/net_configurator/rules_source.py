@@ -20,7 +20,11 @@ class JSONFileReader:
     """Reader for JSON formatted files."""
 
     def __init__(self, path: str | Path) -> None:
-        """Sets the source path."""
+        """Sets the source path.
+
+        Args:
+            path (str | Path): Path of source file.
+        """
         self.__path = Path(path)
 
     def read_all(self) -> list[Any]:
@@ -49,19 +53,23 @@ class JSONFileReader:
 class RulesSource:
     """Source of rules read with given ReaderInterface."""
 
-    def __init__(self, source: ReaderInterface) -> None:
-        """Sets the source."""
-        self.__source = source
+    def __init__(self, source_reader: ReaderInterface) -> None:
+        """Sets the source reader.
+
+        Args:
+            source_reader (ReaderInterface): Object used to read rules from.
+        """
+        self.__reader = source_reader
 
     def read_all(self) -> set[Rule]:
         """Returns set of rules from external source.
 
         Returns:
-            set[Rule]: Rules read from source.
+            set[Rule]: Rules read from reader.
 
         Raises:
             ValidationError: If input data violates Rule's restrictions.
             TypeError: If JSON data is not array.
             Exception: Other types raised by read_all of given reader.
         """
-        return {Rule(**rule) for rule in self.__source.read_all()}
+        return {Rule(**rule) for rule in self.__reader.read_all()}
