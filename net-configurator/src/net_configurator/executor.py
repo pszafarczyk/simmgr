@@ -1,6 +1,8 @@
 """Classes for executing commands on the firewall."""
 
 import contextlib
+from typing import Any
+from typing import cast
 
 from netmiko import BaseConnection
 from netmiko import ConnectHandler
@@ -10,8 +12,6 @@ from tenacity import retry
 from tenacity import RetryError
 from tenacity import stop_after_delay
 from tenacity import wait_fixed
-from typing import Any
-from typing import cast
 
 
 class ExecutorBaseError(Exception):
@@ -67,7 +67,7 @@ class ExecuteError(ExecutorBaseError):
 class Executor:
     """Executor for managing SSH connections and executing commands."""
 
-    def __init__(self, device_config: dict[str,Any]) -> None:
+    def __init__(self, device_config: dict[str, Any]) -> None:
         """Initialize the Executor and connect to the device.
 
         Args:
@@ -133,7 +133,7 @@ class Executor:
         """Execute command and return structured output."""
         if self.__connection is not None and self.__connection.is_alive():
             try:
-                return cast(str,self.__connection.send_command(command))
+                return cast(str, self.__connection.send_command(command))
             except Exception as err:
                 raise ExecuteError from err
         else:
