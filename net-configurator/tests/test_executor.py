@@ -53,10 +53,10 @@ def test_initialization(device_config: dict[str, str]) -> None:
     assert executor.__dict__.get('_Executor__device') == device_config
 
 
-def test_connect_success(executor: Executor, mock_connection: Mock) -> None:
+def test_connect_success(executor: Executor) -> None:
     """Verify connect establishes a connection successfully."""
     executor.connect()
-    assert executor.is_connected() == True
+    assert executor.is_connected()
 
 
 def test_connect_timeout(mocker: MockerFixture, device_config: dict[str, str]) -> None:
@@ -79,9 +79,9 @@ def test_context_manager(executor: Executor, mock_connection: Mock, mocker: Mock
     """Verify context manager connects and disconnects properly."""
     mocker.patch('net_configurator.executor.Executor._wait_for_disconnect')
     with executor as ex:
-        assert ex.is_connected() == True
+        assert ex.is_connected()
     mock_connection.send_command.assert_called_once_with('exit', expect_string='')
-    assert ex.is_connected() == False
+    assert not ex.is_connected()
 
 
 def test_disconnect_success(executor: Executor, mock_connection: Mock, mocker: MockerFixture) -> None:
@@ -90,7 +90,7 @@ def test_disconnect_success(executor: Executor, mock_connection: Mock, mocker: M
     executor.connect()
     executor.disconnect()
     mock_connection.send_command.assert_called_once_with('exit', expect_string='')
-    assert executor.is_connected() == False
+    assert not executor.is_connected()
 
 
 def test_disconnect_timeout(executor: Executor, mocker: MockerFixture) -> None:
