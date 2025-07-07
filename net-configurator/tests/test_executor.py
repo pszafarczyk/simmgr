@@ -8,8 +8,8 @@ from netmiko import BaseConnection
 from netmiko import NetmikoAuthenticationException
 from netmiko import NetmikoTimeoutException
 import pytest
-from pytest_mock import MockerFixture  # Import MockerFixture for proper typing
-from tenacity import RetryError, Future  # Import Future for RetryError
+from pytest_mock import MockerFixture  
+from tenacity import RetryError, Future
 
 from net_configurator.executor import AuthenticationError
 from net_configurator.executor import ConnectionTimeoutError
@@ -49,15 +49,12 @@ def executor(device_config: Dict[str, str], mocker: MockerFixture, mock_connecti
 def test_initialization(device_config: Dict[str, str]) -> None:
     """Verify Executor initializes with no connection and correct device config."""
     executor = Executor(device_config)
-    # Avoid accessing private attributes; test public behavior or use a getter if needed
-    # For testing private state, consider refactoring Executor to expose state via properties
-    assert executor.__dict__.get('_Executor__connection') is None  # Workaround for private attribute
-    assert executor.__dict__.get('_Executor__device') == device_config  # Workaround for private attribute
+    assert executor.__dict__.get('_Executor__connection') is None  
+    assert executor.__dict__.get('_Executor__device') == device_config
 
 
 def test_connect_success(executor: Executor, mock_connection: Mock) -> None:
     """Verify connect establishes a connection successfully."""
-    executor.__dict__['_Executor__connection'] = None  # Workaround for private attribute
     executor.connect()
     assert executor.__dict__.get('_Executor__connection') == mock_connection
 
@@ -98,7 +95,6 @@ def test_disconnect_success(executor: Executor, mock_connection: Mock, mocker: M
 
 def test_disconnect_timeout(executor: Executor, mocker: MockerFixture) -> None:
     """Verify disconnect raises DisconnectTimeoutError on timeout."""
-    # Create a mock Future object for RetryError
     mock_future = Mock(spec=Future)
     mocker.patch('net_configurator.executor.Executor._wait_for_disconnect', side_effect=RetryError(mock_future))
     executor.connect()
@@ -108,7 +104,7 @@ def test_disconnect_timeout(executor: Executor, mocker: MockerFixture) -> None:
 
 def test_execute_no_connection(executor: Executor) -> None:
     """Verify execute raises NoConnectionError when not connected."""
-    executor.__dict__['_Executor__connection'] = None  # Workaround for private attribute
+    executor.__dict__['_Executor__connection'] = None
     with pytest.raises(NoConnectionError, match='There is no connection'):
         executor.execute('show version')
 
@@ -131,6 +127,6 @@ def test_execute_command_failure(executor: Executor, mock_connection: Mock) -> N
 
 def test_destructor_disconnects(executor: Executor, mock_connection: Mock) -> None:
     """Verify destructor disconnects the active connection."""
-    executor.__dict__['_Executor__connection'] = mock_connection  # Workaround for private attribute
+    executor.__dict__['_Executor__connection'] = mock_connection
     executor.__del__()
     mock_connection.send_command.assert_called_once_with('exit', expect_string='')

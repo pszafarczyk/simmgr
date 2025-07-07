@@ -10,12 +10,14 @@ from tenacity import retry
 from tenacity import RetryError
 from tenacity import stop_after_delay
 from tenacity import wait_fixed
+from typing import Any
+from typing import cast
 
 
 class ExecutorBaseError(Exception):
     """Base class for Executor-related errors."""
 
-    def __init__(self, message: str = 'Executor encountered an error'):
+    def __init__(self, message: str = 'Executor encountered an error') -> None:
         """Initialize base Executor exception."""
         super().__init__(message)
 
@@ -23,7 +25,7 @@ class ExecutorBaseError(Exception):
 class ConnectionTimeoutError(ExecutorBaseError):
     """Raised when SSH connection cannot be established."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize SSH connection timeout error."""
         super().__init__('Cannot connect to device. There may be no network or the parameters are incorrect.')
 
@@ -31,7 +33,7 @@ class ConnectionTimeoutError(ExecutorBaseError):
 class AuthenticationError(ExecutorBaseError):
     """Raised when SSH connection cannot be established."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize SSH connection authentication error."""
         super().__init__('Cannot connect to device due to authentication problem.')
 
@@ -39,7 +41,7 @@ class AuthenticationError(ExecutorBaseError):
 class DisconnectTimeoutError(ExecutorBaseError):
     """Raised when SSH connection does not close within expected time."""
 
-    def __init__(self, retries: int | None = None):
+    def __init__(self, retries: int | None = None) -> None:
         """Initialize SSH disconnect timeout error."""
         message = f'SSH connection did not close in time after {retries} retries.'
         super().__init__(message)
@@ -49,7 +51,7 @@ class DisconnectTimeoutError(ExecutorBaseError):
 class NoConnectionError(ExecutorBaseError):
     """Raised when the connection is still active after 'exit' was sent."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize still-connected error."""
         super().__init__('There is no connection.')
 
@@ -57,7 +59,7 @@ class NoConnectionError(ExecutorBaseError):
 class ExecuteError(ExecutorBaseError):
     """Raised when the command didn't produce expected effect."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize execut error."""
         super().__init__('Command failed.')
 
@@ -65,7 +67,7 @@ class ExecuteError(ExecutorBaseError):
 class Executor:
     """Executor for managing SSH connections and executing commands."""
 
-    def __init__(self, device_config: dict):
+    def __init__(self, device_config: dict[str,Any]) -> None:
         """Initialize the Executor and connect to the device.
 
         Args:
@@ -86,17 +88,18 @@ class Executor:
         self.__device = device_config
         self.__connection: BaseConnection | None = None
 
-    def __del__(self):
+    def __del__(self) -> None:
         """Ensure disconnection when the object is garbage collected."""
         with contextlib.suppress(Exception):
-            self.__connection.send_command('exit', expect_string='')
+            if self.__connection is not None and self.__connection.is_alive():
+                self.__connection.send_command('exit', expect_string='')
 
-    def __enter__(self):
+    def __enter__(self) -> 'Executor':
         """Enter the runtime context related to this object."""
         self.connect()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Exit the runtime context and disconnect from the device."""
         self.disconnect()
 
@@ -110,7 +113,7 @@ class Executor:
             except NetmikoAuthenticationException as err:
                 raise AuthenticationError from err
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         """Send 'exit' and wait until the connection is closed."""
         if self.__connection is not None and self.__connection.is_alive():
             self.__connection.send_command('exit', expect_string='')
@@ -121,16 +124,17 @@ class Executor:
         self.__connection = None
 
     @retry(stop=stop_after_delay(10), wait=wait_fixed(0.5))
-    def _wait_for_disconnect(self):
+    def _wait_for_disconnect(self) -> None:
         """Retry until connection is inactive."""
         if self.__connection is not None and self.__connection.is_alive():
             raise DisconnectTimeoutError
 
     def execute(self, command: str) -> str:
         """Execute command and return structured output."""
-        if self.__connection is None or not self.__connection.is_alive():
+        if self.__connection is not None and self.__connection.is_alive():
+            try:
+                return cast(str,self.__connection.send_command(command))
+            except Exception as err:
+                raise ExecuteError from err
+        else:
             raise NoConnectionError
-        try:
-            return self.__connection.send_command(command)
-        except Exception as err:
-            raise ExecuteError from err

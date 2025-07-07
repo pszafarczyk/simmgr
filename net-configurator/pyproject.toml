@@ -31,6 +31,10 @@ strict = true
 show_error_codes = true
 plugins = ["pydantic.mypy"]
 
+[[tool.mypy.overrides]]
+module = ["netmiko.*"]
+ignore_missing_imports = true
+
 [tool.ruff]
 src = ["src"]
 line-length = 158
