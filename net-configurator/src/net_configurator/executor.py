@@ -92,7 +92,7 @@ class Executor:
         """Ensure disconnection when the object is garbage collected."""
         with contextlib.suppress(Exception):
             if self.is_connected():
-                self.__connection.send_command('exit', expect_string='')
+                cast(BaseConnection, self.__connection).send_command('exit', expect_string='')
 
     def __enter__(self) -> 'Executor':
         """Enter the runtime context related to this object."""
@@ -115,29 +115,29 @@ class Executor:
 
     def disconnect(self) -> None:
         """Send 'exit' and wait until the connection is closed."""
-        if self.is_connected:
-            self.__connection.send_command('exit', expect_string='')
+        if self.is_connected():
+            cast(BaseConnection, self.__connection).send_command('exit', expect_string='')
             try:
                 self._wait_for_disconnect()
             except RetryError as err:
                 raise DisconnectTimeoutError(retries=20) from err
         self.__connection = None
-    
+
     def is_connected(self) -> bool:
-        """Send 'exit' and wait until the connection is closed."""
+        """Check if there is connection."""
         return self.__connection is not None and self.__connection.is_alive()
 
     @retry(stop=stop_after_delay(10), wait=wait_fixed(0.5))
     def _wait_for_disconnect(self) -> None:
         """Retry until connection is inactive."""
-        if self.is_connencted():
+        if self.is_connected():
             raise DisconnectTimeoutError
 
     def execute(self, command: str) -> str:
         """Execute command and return structured output."""
         if self.is_connected():
             try:
-                return cast(str, self.__connection.send_command(command))
+                return cast(str, cast(BaseConnection, self.__connection).send_command(command))
             except Exception as err:
                 raise ExecuteError from err
         else:
