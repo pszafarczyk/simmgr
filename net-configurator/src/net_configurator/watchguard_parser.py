@@ -1,13 +1,37 @@
 """Module for parsing WatchGuard Firebox firewall rules into structured data."""
 
 import re
+from typing import Union, Optional
+from dataclasses import dataclass
 
+@dataclass
+class Network:
+    """Represents a network range or single IP/CIDR."""
+    ip_low: str
+    ip_high: str
+
+
+@dataclass
+class RuleAttributes:
+    """Represents the attributes of a firewall rule."""
+    sources: list[Network]
+    destinations: list[Network]
+    filter_name: str
+    owners: list[str]
+
+
+@dataclass
+class Filter:
+    """Represents a filter with protocol and port information."""
+    protocol: str
+    port_low: str
+    port_high: str
 
 class WatchguardParser:
     """RuleManager class for managing WatchGuard Firebox firewall rules."""
 
     @staticmethod
-    def extract_rule_names(data: str):
+    def extract_rule_names(data: str) -> list[str]:
         """Extract all unique rule IDs."""
         pattern = re.compile(r'X-[a-f0-9]{40}')
         matches = []
@@ -18,26 +42,23 @@ class WatchguardParser:
         return matches
 
     @staticmethod
-    def parse_network(network_text: str) -> dict[str, str]:
+    def parse_network(network_text: str) -> Network:
         """Parse network."""
         network_text = network_text.strip()
-        result = {'ip_low': '', 'ip_high': ''}
+        ip_low = ip_high = ''
 
         if '-' in network_text:
             ip_low, ip_high = network_text.split('-')
-            result['ip_low'] = ip_low.strip()
-            result['ip_high'] = ip_high.strip()
+            ip_low, ip_high = ip_low.strip(), ip_high.strip()
         elif '/' in network_text:
-            result['ip_low'] = network_text
-            result['ip_high'] = ''
+            ip_low = network_text
         else:
-            result['ip_low'] = network_text
-            result['ip_high'] = ''
+            ip_low = network_text
 
-        return result
-
+        return Network(ip_low=ip_low, ip_high=ip_high)
+    
     @staticmethod
-    def parse_rule(rule_text: str) -> dict:
+    def parse_rule(rule_text: str) -> RuleAttributes: 
         """Parse a rule text into a structured dictionary of attributes.
 
         Args:
@@ -63,7 +84,7 @@ class WatchguardParser:
         return [line for line in cleaned_lines if len(line) >= min_line_length]
 
     @staticmethod
-    def _parse_rule_line(line: str, attributes: dict[str,str]) -> list[list[str]]:
+    def _parse_rule_line(line: list[str], attributes: dict[str, Union[list[Network], list[str], str]]) -> None:
         """Parse rule line."""
         key, value = line[0], line[1]
 
@@ -80,56 +101,56 @@ class WatchguardParser:
             attributes['owners'] = [tag.strip() for tag in value.split(',')]
 
     @staticmethod
-    def extract_attributes(cleaned_lines: list[list[str]]) -> dict:
+    def extract_attributes(cleaned_lines: list[list[str]]) -> RuleAttributes:
         """Extract rule attributes from cleaned lines into a structured dictionary.
 
         Args:
-            cleaned_lines (list[list[str]]): List of cleaned line parts.
+            cleaned_lines (list[list[str]]): list of cleaned line parts.
         """
         attributes = {'sources': [], 'destinations': [], 'filter_name': '', 'owners': []}
 
         for line in WatchguardParser._valid_lines(cleaned_lines):
-            WatchguardParser._parse_rule_line(line,attributes)
+            WatchguardParser._parse_rule_line(line, attributes)
         return attributes
-    
+
     @staticmethod
-    def _match_range(line: str):   
+    def _match_range(line: str) -> Optional[re.Match[str]]:
         """Match range."""
         pattern = re.compile(r'\(\d+\): service-range/protocol\((\w+)\):start-port\((\d+)\) end-port\((\d+)\)')
         return pattern.match(line)
 
     @staticmethod
-    def _match_single(line: str):   
+    def _match_single(line: str) -> Optional[re.Match[str]]:
         """Match single."""
         pattern = re.compile(r'\(\d+\): service-single/protocol\((\w+)\):(.+)')
         return pattern.match(line)
 
     @staticmethod
-    def _extract_range(match): 
+    def _extract_range(match: re.Match[str]) -> Filter:
         """Extract range."""
-        return {
-            'protocol': match.group(1),
-            'port_low': match.group(2),
-            'port_high': match.group(3),
-        }
+        return Filter(
+            protocol = match.group(1),
+            port_low = match.group(2),
+            port_high = match.group(3)
+        )
 
     @staticmethod
-    def _extract_single(match):
+    def _extract_single(match: re.Match[str]) -> Filter:
         """Extract single."""
         protocol = match.group(1)
         details = match.group(2)
-        result = {'protocol': protocol, 'port_low': '', 'port_high': ''}
-        
+        port_low = port_high = ''
+
         if protocol in {'tcp', 'udp'}:
             port_match = re.search(r'port\((\d+)\)', details)
             if port_match:
                 result['port_low'] = port_match.group(1)
         elif protocol == 'icmp':
             pass
-        return result
-    
+        return Filter(protocol=protocol, port_low=port_low, port_high=port_high)
+
     @staticmethod
-    def _parse_filter_line(line: str):        
+    def _parse_filter_line(line: str) -> Optional[Filter]:
         """Parse filter line."""
         line = line.strip()
         if not line.startswith('('):
@@ -137,14 +158,14 @@ class WatchguardParser:
 
         if match := WatchguardParser._match_range(line):
             return WatchguardParser._extract_range(match)
-        
+
         if match := WatchguardParser._match_single(line):
             return WatchguardParser._extract_single(match)
-        
+
         return None
 
     @staticmethod
-    def parse_filter(data: str):
+    def parse_filter(data: str) -> list[Filter]:
         """Parse service lines into structured protocol/port dictionaries."""
         result = []
         lines = data.strip().split('\n')
