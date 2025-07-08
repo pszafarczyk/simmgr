@@ -12,6 +12,8 @@ dependencies = [
     "pydantic (>=2.11.5,<3.0.0)",
     "decouple (>=0.0.7,<0.0.8)",
     "netmiko (>=4.5.0,<5.0.0)",
+    "tenacity (>=9.1.2,<10.0.0)",
+    "pytest-mock (>=3.14.1,<4.0.0)",
 ]
 
 [tool.poetry]
@@ -28,6 +30,10 @@ files = ["src", "tests"]
 strict = true
 show_error_codes = true
 plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["netmiko.*"]
+ignore_missing_imports = true
 
 [tool.ruff]
 src = ["src"]

@@ -23,14 +23,13 @@ def test_json_file_reader_with_valid_input(monkeypatch: pytest.MonkeyPatch) -> N
     assert isinstance(result, list)
 
 
-# def test_json_file_reader_without_array() -> None:
-#     """JSONFileReader with no top-level array in JSON should raise."""
-#     assert False
-
-
-# def test_json_file_reader_with_invalid_json_should_raise() -> None:
-#     """JSONFileReader with invalid JSON should raise."""
-#     assert False
+def test_json_file_reader_without_array(monkeypatch: pytest.MonkeyPatch) -> None:
+    """JSONFileReader with no top-level array in JSON should raise."""
+    monkeypatch.setattr(Path, 'open', lambda path: StringIO())  # noqa: ARG005
+    monkeypatch.setattr(json, 'load', lambda file: {'a': 1})  # noqa: ARG005
+    reader = JSONFileReader('file.json')
+    with pytest.raises(TypeError, match='File content is not an array'):
+        reader.read_all()
 
 
 def test_rules_source_calls_reader() -> None:
