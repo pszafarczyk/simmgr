@@ -11,9 +11,14 @@ requires-python = ">=3.12,<4.0"
 dependencies = [
     "pydantic (>=2.11.5,<3.0.0)",
     "netmiko (>=4.5.0,<5.0.0)",
+<<<<<<< HEAD
     "tenacity (>=9.1.2,<10.0.0)",
     "pytest-mock (>=3.14.1,<4.0.0)",
     "python-decouple (>=3.8,<4.0)",
+=======
+    "python-decouple (>=3.8,<4.0)",
+    "pyparsing (>=3.2.3,<4.0.0)",
+>>>>>>> dede8e1 (Resolved merge conflicts using incoming changes from origin/executor)
 ]
 
 [tool.poetry]
@@ -30,10 +35,6 @@ files = ["src", "tests"]
 strict = true
 show_error_codes = true
 plugins = ["pydantic.mypy"]
-
-[[tool.mypy.overrides]]
-module = ["netmiko.*"]
-ignore_missing_imports = true
 
 [tool.ruff]
 src = ["src"]
