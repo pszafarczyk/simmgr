@@ -1,6 +1,6 @@
 """Classes for generating WatchGuard-specific commands."""
 
-from rule import Rule, RuleFilter, NetworkPeer
+from rule import Rule, RuleFilter, NetworkPeer, NetworkService
 from contextlib import contextmanager
 
 
@@ -45,13 +45,27 @@ class RuleFormatter:
     def build_network(networks: list[NetworkPeer]) -> str:
         parts = []
         for network in networks:
-            if network.is_ip():
+            if network.is_address_single():
                 parts.append(f"host-ip {network.ip_low}")
-            elif network.is_range():
-                parts.append(f"range {network.ip_low} {network.ip_high}")
-            elif network.is_network():
-                parts.append(f"network {network.ip_low}")
+            elif network.is_address_range():
+                parts.append(f"host-range {network.ip_low} {network.ip_high}")
+            elif network.is_address_single():
+                parts.append(f"network-ip {network.ip_low}")
         return ' '.join(parts)
+
+    @staticmethod
+    def build_service(service: NetworkService) -> str:
+        parts = []
+        parts.append(f'protocol {service.protocol}')
+        if service.protocol == 'icmp':
+            parts.append(f'Any 255')
+        else:
+            if service.is_port_single():
+                parts.append(f'{service.port_low}') 
+            else:
+                parts.append(f'port-range {service.port_low} {service.port_low}')
+        return ' '.join(parts)
+
 
     @staticmethod
     def build_from(rule: Rule) -> str:
@@ -92,7 +106,7 @@ class WatchguardCommandGenerator:
         Returns:
             list[str]: A list of generated commands.
         """
-        return [f'no rule {name}']
+        return f'no rule {name}'
 
     @staticmethod
     def read_rules() -> str:
@@ -102,6 +116,15 @@ class WatchguardCommandGenerator:
             str: A generated command.
         """
         return 'show rule'
+    
+    @staticmethod
+    def read_rule(name: str) -> str:
+        """Generate command to read all rules.
+
+        Returns:
+            str: A generated command.
+        """
+        return f'show rule {name}'
 
     @staticmethod
     def add_filter(filter: RuleFilter) -> list[str]:
@@ -115,12 +138,12 @@ class WatchguardCommandGenerator:
         """
         commands = []
         with RuleFormatter.config(commands), \
-             RuleFormatter.policy(commands), \
-             RuleFormatter.filter(commands, filter.identifier):
-
-            commands.append(
-                f'protocol '
-            )
+             RuleFormatter.policy(commands):
+            for service in filter.root: 
+                commands.append(
+                    f'policy-type {filter.identifier} '
+                    f'{RuleFormatter.build_service(service)}'
+                )
             commands.append('apply')
 
         return commands
@@ -145,4 +168,12 @@ class WatchguardCommandGenerator:
             str: A generated command.
         """
         return 'show policy-type'
+    
+    @staticmethod
+    def read_filter(name: str) -> str:
+        """Generate command to read all rules.
 
+        Returns:
+            str: A generated command.
+        """
+        return f'show policy-type {name}'
