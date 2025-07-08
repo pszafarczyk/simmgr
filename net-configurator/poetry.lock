@@ -1037,6 +1037,22 @@ files = [
 ]
 
 [[package]]
+name = "tenacity"
+version = "9.1.2"
+description = "Retry code until it succeeds"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "tenacity-9.1.2-py3-none-any.whl", hash = "sha256:f77bf36710d8b73a50b2dd155c97b870017ad21afe6ab300326b0371b3b05138"},
+    {file = "tenacity-9.1.2.tar.gz", hash = "sha256:1169d376c297e7de388d18b4481760d478b0e99a777cad3a9c86e556f4b697cb"},
+]
+
+[package.extras]
+doc = ["reno", "sphinx"]
+test = ["pytest", "tornado (>=4.5)", "typeguard"]
+
+[[package]]
 name = "textfsm"
 version = "1.1.3"
 description = "Python module for parsing semi-structured text into python tables."
@@ -1100,4 +1116,4 @@ typing-extensions = ">=4.12.0"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "f4543c02af2bc838660bc1e45d640af439b8f173cb93a22e84e6c825d7b31c8b"
+content-hash = "25544f4ae2d93ff603f0f7a581717032dde8ed1d87c4c1fe23db3c928b0e7f3e"
