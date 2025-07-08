@@ -1,6 +1,7 @@
 """Classes for generating WatchGuard-specific commands."""
 
 from contextlib import contextmanager
+from typing import Iterator
 
 from rule import NetworkPeer
 from rule import NetworkService
@@ -13,7 +14,7 @@ class CommandBuilder:
 
     @staticmethod
     @contextmanager
-    def config(commands: list[str]):
+    def config(commands: list[str]) -> Iterator[None]:
         """Context manager to open and close a config block."""
         commands.append('config')
         try:
@@ -23,7 +24,7 @@ class CommandBuilder:
 
     @staticmethod
     @contextmanager
-    def policy(commands: list[str]):
+    def policy(commands: list[str]) -> Iterator[None]:
         """Context manager to open and close a policy block."""
         commands.append('policy')
         try:
@@ -33,7 +34,7 @@ class CommandBuilder:
 
     @staticmethod
     @contextmanager
-    def rule(commands: list[str], name: str):
+    def rule(commands: list[str], name: str) -> Iterator[None]:
         """Context manager to define a rule block.
 
         Args:
@@ -48,7 +49,7 @@ class CommandBuilder:
 
     @staticmethod
     @contextmanager
-    def filter(commands: list[str], name: str):
+    def filter(commands: list[str], name: str) -> Iterator[None]:
         """Context manager to define a filter block.
 
         Args:
@@ -62,7 +63,7 @@ class CommandBuilder:
             commands.append('exit')
 
     @staticmethod
-    def build_network(networks: list[NetworkPeer]) -> str:
+    def build_network(networks: tuple[NetworkPeer, ...]) -> str:
         """Build network string from a list of NetworkPeer objects.
 
         Args:
@@ -123,18 +124,18 @@ class CommandBuilder:
             str: A command-ready destination string.
         """
         return f'to {CommandBuilder.build_network(rule.destinations)}'
-    
+
     @staticmethod
     def build_owners(owners: tuple[str, ...]) -> str:
         """Build the owners part of a rule command.
 
         Args:
-            rule (Rule): Rule with destination definitions.
+            owners (tuple[str, ...]): List-like touple of owner tags.
 
         Returns:
-            str: A command-ready destination string.
+            str: A string with owner tags.
         """
-        return " ".join(owners)
+        return ' '.join(owners)
 
 
 class WatchguardCommandGenerator:
@@ -150,7 +151,7 @@ class WatchguardCommandGenerator:
         Returns:
             list[str]: A list of generated commands.
         """
-        commands = []
+        commands: list[str] = []
         with CommandBuilder.config(commands), CommandBuilder.policy(commands), CommandBuilder.rule(commands, rule.identifier):
             commands.append(f'policy-type {rule.filter.identifier} {CommandBuilder.build_from(rule)} {CommandBuilder.build_to(rule)}')
             commands.append(f'policy-tag {CommandBuilder.build_owners(rule.owners)}')
@@ -178,18 +179,15 @@ class WatchguardCommandGenerator:
             str: A generated command.
         """
         return 'show rule'
-    
-    @staticmethod
-    def read_owners(name: str) -> str:
-        """Generate command to read a specific rule.
 
-        Args:
-            name (str): Rule name to read.
+    @staticmethod
+    def read_owners() -> str:
+        """Generate command to read tags.
 
         Returns:
             str: A generated command.
         """
-        return f'show policy-type'
+        return 'show policy-type'
 
     @staticmethod
     def read_rule(name: str) -> str:
@@ -202,18 +200,18 @@ class WatchguardCommandGenerator:
             str: A generated command.
         """
         return f'show rule {name}'
-    
+
     @staticmethod
     def add_owner(owners: tuple[str, ...]) -> list[str]:
-        """Generate commands to add a filter.
+        """Generate commands to add a owner tags.
 
         Args:
-            rule_filter (RuleFilter): The filter to be added.
+            owners (tuple[str, ...]): List-like touple of owner tags.
 
         Returns:
             list[str]: A list of generated commands.
         """
-        commands = []
+        commands: list[str] = []
         with CommandBuilder.config(commands), CommandBuilder.policy(commands):
             commands.extend([f'policy-tag {owner} color 0xc0c0c0' for owner in owners])
 
@@ -229,7 +227,7 @@ class WatchguardCommandGenerator:
         Returns:
             list[str]: A list of generated commands.
         """
-        commands = []
+        commands: list[str] = []
         with CommandBuilder.config(commands), CommandBuilder.policy(commands):
             commands.extend([f'policy-type {rule_filter.identifier} {CommandBuilder.build_service(service)}' for service in rule_filter.root])
             commands.append('apply')
