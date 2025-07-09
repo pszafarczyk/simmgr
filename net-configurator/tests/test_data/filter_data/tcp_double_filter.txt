@@ -1,0 +1,8 @@
+--
+-- Service Object <SQL*Net>
+--
+name: SQL*Net
+idle timeout: 0 second(s)
+members:
+    (1): service-single/protocol(tcp):port(1521)
+    (2): service-single/protocol(tcp):port(1526)
