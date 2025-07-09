@@ -5,8 +5,8 @@ import pytest
 
 from net_configurator.rule import NetworkPeer
 from net_configurator.rule import NetworkService
-from net_configurator.rule import Rule
 from net_configurator.rule import PacketFilter
+from net_configurator.rule import Rule
 
 
 @pytest.fixture
