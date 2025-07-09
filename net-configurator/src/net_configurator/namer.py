@@ -22,3 +22,15 @@ class Namer:
         hasher.update(json_dump.encode())
         rule_hash = hasher.hexdigest()
         return f'{IDENTIFIER_PREFIX}{rule_hash}'
+
+    @staticmethod
+    def generate_nohash_identifier(text: str) -> str:
+        """Return identifier for text by prefixing.
+
+        Args:
+            text (str): String to generate identifier for.
+
+        Returns:
+            str: Prefixed text.
+        """
+        return f'{IDENTIFIER_PREFIX}{text}'
