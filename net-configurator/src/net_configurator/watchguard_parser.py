@@ -64,6 +64,7 @@ class WatchguardParser:
         Args:
             rule_text (str): The input rule text to parse.
         """
+
         cleaned_lines = WatchguardParser.clean_rule_lines(rule_text)
         return WatchguardParser.extract_attributes(cleaned_lines)
 
@@ -84,21 +85,37 @@ class WatchguardParser:
         return [line for line in cleaned_lines if len(line) >= min_line_length]
 
     @staticmethod
-    def _parse_rule_line(line: list[str], attributes: dict[str, Union[list[Network], list[str], str]]) -> None:
+    def _from_handler(key: str, value: str) -> list[list[str]]:
+        """Filter out lines that are too short to process."""
+    
+    @staticmethod
+    def _parse_rule_line(line: list[str], attributes: dict[str, Union[list[Network], list[str], str]],prev_key: str) -> str:
         """Parse rule line."""
         key, value = line[0], line[1]
 
-        if key == 'from alias list' or (key == '' and WatchguardParser.parse_network(value) not in attributes['sources']):
+        if key == 'from alias list':
             attributes['sources'].append(WatchguardParser.parse_network(value))
+            return 'from alias list'
 
-        elif key == 'to alias list' or (key == '' and WatchguardParser.parse_network(value) not in attributes['destinations']):
+        elif key == '' and prev_key == 'from alias list':
+            attributes['sources'].append(WatchguardParser.parse_network(value))
+            return prev_key
+        
+        if key == 'to alias list':
             attributes['destinations'].append(WatchguardParser.parse_network(value))
+            return 'to alias list'
 
-        elif key == 'service':
+        elif key == '' and prev_key == 'to alias list':
+            attributes['destinations'].append(WatchguardParser.parse_network(value))
+            return prev_key
+        
+        if key == 'service':
             attributes['filter_name'] = value
+            return 'service'
 
-        elif key == 'Tags':
+        if key == 'Tags':
             attributes['owners'] = [tag.strip() for tag in value.split(',')]
+            return 'Tags'
 
     @staticmethod
     def extract_attributes(cleaned_lines: list[list[str]]) -> RuleAttributes:
@@ -108,9 +125,9 @@ class WatchguardParser:
             cleaned_lines (list[list[str]]): list of cleaned line parts.
         """
         attributes = {'sources': [], 'destinations': [], 'filter_name': '', 'owners': []}
-
+        prev_key = ''
         for line in WatchguardParser._valid_lines(cleaned_lines):
-            WatchguardParser._parse_rule_line(line, attributes)
+            prev_key = WatchguardParser._parse_rule_line(line, attributes, prev_key)
         return attributes
 
     @staticmethod
@@ -144,7 +161,7 @@ class WatchguardParser:
         if protocol in {'tcp', 'udp'}:
             port_match = re.search(r'port\((\d+)\)', details)
             if port_match:
-                result['port_low'] = port_match.group(1)
+                port_low = port_match.group(1)
         elif protocol == 'icmp':
             pass
         return Filter(protocol=protocol, port_low=port_low, port_high=port_high)

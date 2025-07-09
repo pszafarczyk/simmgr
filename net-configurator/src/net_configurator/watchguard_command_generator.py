@@ -3,10 +3,10 @@
 from contextlib import contextmanager
 from typing import Iterator
 
-from rule import NetworkPeer
-from rule import NetworkService
-from rule import Rule
-from rule import RuleFilter
+from net_configurator.rule import NetworkPeer
+from net_configurator.rule import NetworkService
+from net_configurator.rule import Rule
+from net_configurator.rule import RuleFilter
 
 
 class CommandBuilder:
@@ -98,7 +98,7 @@ class CommandBuilder:
         elif service.is_port_single():
             parts.append(f'{service.port_low}')
         else:
-            parts.append(f'port-range {service.port_low} {service.port_low}')
+            parts.append(f'port-range {service.port_low} {service.port_high}')
         return ' '.join(parts)
 
     @staticmethod
