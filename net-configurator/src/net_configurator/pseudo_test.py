@@ -41,13 +41,13 @@ def main():
         names = parser.extract_rule_names(result)
         rules_without_filters = []
         for name in names:
-            rules_without_filters.append(parser.parse_rule(executor.execute(command_generator.read_rule(name))))
+            rules_without_filters.append({'name':name,'rule':parser.parse_rule(executor.execute(command_generator.read_rule(name)))})
         
         rules = []
         for rule in rules_without_filters:
             rules.append(rule)
-            rules[-1]['filter'] = parser.parse_filter(executor.execute(command_generator.read_filter(rule['filter_name'])))
-            del(rules[-1]['filter_name'])      
+            rules[-1]['rule']['filter'] = parser.parse_filter(executor.execute(command_generator.read_filter(rule['rule']['filter_name'])))
+            del(rules[-1]['rule']['filter_name'])      
         for rule in rules:
             print(rule)
             print()
