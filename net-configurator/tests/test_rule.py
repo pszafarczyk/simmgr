@@ -6,12 +6,12 @@ import pytest
 from net_configurator.rule import NetworkPeer
 from net_configurator.rule import NetworkService
 from net_configurator.rule import Rule
-from net_configurator.rule import RuleFilter
+from net_configurator.rule import PacketFilter
 
 
 @pytest.fixture
 def network_service() -> NetworkService:
-    """Fixture returning a valid rule filter."""
+    """Fixture returning a valid network service."""
     return NetworkService(protocol='tcp', port_low=80)
 
 
@@ -30,26 +30,26 @@ def list_of_ips_with_lengths(request: pytest.FixtureRequest) -> tuple[list[Netwo
 def test_rule_empty_source_raises(network_service: NetworkService) -> None:
     """Rule invocation with empty source should raise error."""
     with pytest.raises(ValidationError, match='Tuple should have at least 1 item'):
-        Rule(sources=[], destinations=['1.1.1.1'], filter=[network_service])
+        Rule(sources=(), destinations=('1.1.1.1',), packet_filter=(network_service,))
 
 
 def test_rule_empty_destination_raises(network_service: NetworkService) -> None:
     """Rule invocation with empty destination should raise error."""
     with pytest.raises(ValidationError, match='Tuple should have at least 1 item'):
-        Rule(sources=['1.1.1.1'], destinations=[], filter=[network_service])
+        Rule(sources=('1.1.1.1',), destinations=(), packet_filter=(network_service,))
 
 
 def test_rule_empty_filter_raises() -> None:
     """Rule invocation with empty filter should raise error."""
     with pytest.raises(ValidationError, match='Tuple should have at least 1 item'):
-        Rule(sources=['1.1.1.1'], destinations=['1.1.1.1'], filter=[])
+        Rule(sources=('1.1.1.1',), destinations=('1.1.1.1',), packet_filter=())
 
 
 def test_rule_sources_number_of_elements(list_of_ips_with_lengths: tuple[list[NetworkPeer], int], network_service: NetworkService) -> None:
     """Source should be a list of correct number of addresses."""
     list_of_ips = list_of_ips_with_lengths[0]
     expected_length = list_of_ips_with_lengths[1]
-    rule = Rule(sources=list_of_ips, destinations=list_of_ips, filter=[network_service])
+    rule = Rule(sources=list_of_ips, destinations=list_of_ips, packet_filter=[network_service])
     assert len(rule.sources) == expected_length
 
 
@@ -57,7 +57,7 @@ def test_rule_destinations_number_of_elements(list_of_ips_with_lengths: tuple[li
     """Destinations should be a list of correct number of addresses."""
     list_of_ips = list_of_ips_with_lengths[0]
     expected_length = list_of_ips_with_lengths[1]
-    rule = Rule(sources=list_of_ips, destinations=list_of_ips, filter=[network_service])
+    rule = Rule(sources=list_of_ips, destinations=list_of_ips, packet_filter=[network_service])
     assert len(rule.destinations) == expected_length
 
 
@@ -71,8 +71,8 @@ def test_rule_destinations_number_of_elements(list_of_ips_with_lengths: tuple[li
 )
 def test_filter_number_of_elements(network_services: tuple[NetworkService, ...], expected_length: int) -> None:
     """Filter should have correct number of elements."""
-    rule_filter = RuleFilter(network_services)
-    assert len(rule_filter.root) == expected_length
+    packet_filter = PacketFilter(network_services)
+    assert len(packet_filter.root) == expected_length
 
 
 @pytest.mark.parametrize(
@@ -87,7 +87,7 @@ def test_owners_number_of_elements(owners: tuple[str, ...], expected_length: int
     """Owners should have correct number of elements."""
     address = (NetworkPeer(ip_low='172.16.0.1'),)
     services = (NetworkService(protocol='icmp'),)
-    rule = Rule(sources=address, destinations=address, filter=services, owners=owners)
+    rule = Rule(sources=address, destinations=address, packet_filter=services, owners=owners)
     assert len(rule.owners) == expected_length
 
 
@@ -103,5 +103,5 @@ def test_no_owners_number_of_elements(owners: tuple[str, ...] | None) -> None:
     address = (NetworkPeer(ip_low='172.16.0.1'),)
     services = (NetworkService(protocol='icmp'),)
     expected_length = 0
-    rule = Rule(sources=address, destinations=address, filter=services, owners=owners)
+    rule = Rule(sources=address, destinations=address, packet_filter=services, owners=owners)
     assert len(rule.owners) == expected_length
