@@ -1,9 +1,9 @@
-"""Tests for RuleFilter class from `net_configurator.rule` module."""
+"""Tests for PacketFilter class from `net_configurator.rule` module."""
 
 import pytest
 
 from net_configurator.rule import NetworkService
-from net_configurator.rule import RuleFilter
+from net_configurator.rule import PacketFilter
 
 
 @pytest.mark.parametrize(
@@ -18,14 +18,14 @@ from net_configurator.rule import RuleFilter
 )
 def test_rule_filter_has_correct_identifier(services: tuple[NetworkService, ...], expected_identifier: str) -> None:
     """Identifier attribute is as expected."""
-    rule_filter = RuleFilter(services)
-    assert rule_filter.identifier == expected_identifier
+    packet_filter = PacketFilter(services)
+    assert packet_filter.identifier == expected_identifier
 
 
 def test_rule_filter_identifier_independent_of_order() -> None:
     """Filter's identifier should be independent of services order."""
     service_icmp = NetworkService(protocol='icmp')
     service_tcp = NetworkService(protocol='tcp', port_low=80)
-    filter_icmp_tcp = RuleFilter((service_icmp, service_tcp))
-    filter_tcp_icmp = RuleFilter((service_tcp, service_icmp))
+    filter_icmp_tcp = PacketFilter((service_icmp, service_tcp))
+    filter_tcp_icmp = PacketFilter((service_tcp, service_icmp))
     assert filter_icmp_tcp.identifier == filter_tcp_icmp.identifier
