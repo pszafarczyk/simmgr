@@ -5,6 +5,7 @@ from typing import Protocol
 
 from pydantic import RootModel
 
+from net_configurator.rule import PacketFilter
 from net_configurator.rule import Rule
 from net_configurator.rules_source import ReaderInterface
 from net_configurator.rules_source import RulesSource
@@ -19,6 +20,22 @@ class WriterInterface(Protocol):
 
     def delete_rule(self, rule_identifier: str) -> None:
         """delete_rule stub."""
+        ...
+
+    def add_filter(self, packet_filter: PacketFilter) -> None:
+        """add_filter stub."""
+        ...
+
+    def delete_filter(self, filter_identifier: str) -> None:
+        """delete_filter stub."""
+        ...
+
+    def add_owner(self, owner: str) -> None:
+        """add_owner stub."""
+        ...
+
+    def delete_owner(self, owner_identifier: str) -> None:
+        """delete_owner stub."""
         ...
 
     def apply_changes(self) -> None:
@@ -55,6 +72,42 @@ class JSONFileWriter:
         rule_to_delete = next((rule for rule in self.__rules if rule.identifier == rule_identifier), None)
         if rule_to_delete:
             self.__rules.discard(rule_to_delete)
+
+    def add_filter(self, packet_filter: PacketFilter) -> None:
+        """Adds packet filter to file.
+
+        Method is not implemented - no need to do antyhing in file.
+
+        Args:
+            packet_filter (PacketFilter): Packet filter to add.
+        """
+
+    def delete_filter(self, filter_identifier: str) -> None:
+        """Deletes packet filter from file.
+
+        Method is not implemented - no need to do antyhing in file.
+
+        Args:
+            filter_identifier (str): Identifier of packet filter to delete.
+        """
+
+    def add_owner(self, owner: str) -> None:
+        """Adds owner to file.
+
+        Method is not implemented - no need to do antyhing in file.
+
+        Args:
+            owner (str): Owner to add.
+        """
+
+    def delete_owner(self, owner_identifier: str) -> None:
+        """Deletes owner from file.
+
+        Method is not implemented - no need to do antyhing in file.
+
+        Args:
+            owner_identifier (str): Identifier of owner to delete.
+        """
 
     def apply_changes(self) -> None:
         """Creates file with applied changes.
@@ -102,6 +155,38 @@ class RulesTarget(RulesSource):
             rule_identifier (str): Identifier of rule to delete.
         """
         self.__writer.delete_rule(rule_identifier)
+
+    def add_filter(self, packet_filter: PacketFilter) -> None:
+        """Adds packet filter to target writer.
+
+        Args:
+            packet_filter (PacketFilter): Packet filter to add.
+        """
+        self.__writer.add_filter(packet_filter)
+
+    def delete_filter(self, filter_identifier: str) -> None:
+        """Deletes packet filter at target writer.
+
+        Args:
+            filter_identifier (str): Identifier of packet filter to delete.
+        """
+        self.__writer.delete_filter(filter_identifier)
+
+    def add_owner(self, owner: str) -> None:
+        """Adds owner to target writer.
+
+        Args:
+            owner (str): Owner to add.
+        """
+        self.__writer.add_owner(owner)
+
+    def delete_owner(self, owner_identifier: str) -> None:
+        """Deletes owner at target writer.
+
+        Args:
+            owner_identifier (str): Identifier of owner to delete.
+        """
+        self.__writer.delete_owner(owner_identifier)
 
     def apply_changes(self) -> None:
         """Applies changes to target writer.
