@@ -1,0 +1,43 @@
+--
+-- Policy Rule <X-aaae571f4b84a0f8106358a6895c7eb262bca0a2>
+--
+rule position                  : 10
+name                           : X-aaae571f4b84a0f8106358a6895c7eb262bca0a2
+enable                         : Yes
+schedule                       : Always On
+--
+-- Traffic Specifications...
+--
+from alias list                : [10.1.1.1]
+                               : [20.2.2.2]
+to alias list                  : [10.1.1.1]
+                               : [20.2.2.2]
+service                        : X-c281b3a9e94dcfaaef1b028a8c501b656d4bb17e
+--
+-- Actions...
+--
+static-nat                     : None
+connections are                : Allowed
+Connection rate                : 0 per second
+forward traffic mgmt           : disabled
+reverse traffic mgmt           : disabled
+SD-WAN action                  : Disabled
+Send log message               : Disabled
+Send log message for reports   : Disabled
+Send SNMP Trap                 : Disabled
+Send notification              : Disabled
+icmp handling                  : use global settings
+idle timeout                   : 0 second(s)
+Auto blocked                   : Disabled
+global 1to1 nat                : use
+global dnat                    : use
+dnat all-traffic in policy     : not use
+QoS marking type               : No Marking
+QoS marking method             : Preserve
+Prioritize Traffic Based On    : QoS Marking
+Value                          : 0 (Normal)
+Application Blocking           : None
+Geolocation Blocking           : Global
+Time and bandwidth quotas      : Disabled            
+Mobile Security Management     : Disabled            
+Drop connections from non-compliant managed mobile devices: Disabled

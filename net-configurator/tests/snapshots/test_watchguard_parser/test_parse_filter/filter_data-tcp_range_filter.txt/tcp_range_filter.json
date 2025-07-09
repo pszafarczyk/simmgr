@@ -1,0 +1,7 @@
+[
+  {
+    "protocol": "tcp",
+    "port_low": "22",
+    "port_high": "22"
+  }
+]

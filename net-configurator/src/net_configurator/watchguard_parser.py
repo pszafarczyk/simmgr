@@ -3,14 +3,16 @@
 import re
 from typing import Union, Optional
 from dataclasses import dataclass
+from dataclasses_json import dataclass_json
 
+@dataclass_json
 @dataclass
 class Network:
     """Represents a network range or single IP/CIDR."""
     ip_low: str
     ip_high: str
 
-
+@dataclass_json
 @dataclass
 class RuleAttributes:
     """Represents the attributes of a firewall rule."""
@@ -19,7 +21,7 @@ class RuleAttributes:
     filter_name: str
     owners: list[str]
 
-
+@dataclass_json
 @dataclass
 class Filter:
     """Represents a filter with protocol and port information."""
