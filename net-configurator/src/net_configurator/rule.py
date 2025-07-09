@@ -153,13 +153,13 @@ class NetworkPeer(BaseModel, frozen=True):
 class Owner(RootModel[str], frozen=True):
     """Single owner of a rule."""
 
-    root: Annotated[str, StringConstraints(pattern='^[A-Za-z0-9-_]+$')]
+    root: Annotated[str, StringConstraints(pattern=Namer.get_owner_pattern())]
 
     @computed_field  # type: ignore[prop-decorator]
     @property
     def identifier(self) -> str:
         """Returns model's identifier."""
-        return Namer.generate_nohash_identifier(self.root)
+        return self.root
 
     def __lt__(self, other: RootModel[str]) -> bool:
         """Returns self < other for sorting."""

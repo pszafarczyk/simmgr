@@ -24,13 +24,6 @@ class Namer:
         return f'{IDENTIFIER_PREFIX}{rule_hash}'
 
     @staticmethod
-    def generate_nohash_identifier(text: str) -> str:
-        """Return identifier for text by prefixing.
-
-        Args:
-            text (str): String to generate identifier for.
-
-        Returns:
-            str: Prefixed text.
-        """
-        return f'{IDENTIFIER_PREFIX}{text}'
+    def get_owner_pattern() -> str:
+        """Returnes pattern of allowed owner string."""
+        return f'^{IDENTIFIER_PREFIX}[A-Za-z0-9-_]+$'

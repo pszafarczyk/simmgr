@@ -78,9 +78,9 @@ def test_filter_number_of_elements(network_services: tuple[NetworkService, ...],
 @pytest.mark.parametrize(
     'owners, expected_length',
     [
-        (('o1',), 1),
-        (('o1', 'o2'), 2),
-        (('o1', 'o2', 'o1'), 2),
+        (('X-o1',), 1),
+        (('X-o1', 'X-o2'), 2),
+        (('X-o1', 'X-o2', 'X-o1'), 2),
     ],
 )
 def test_owners_number_of_elements(owners: tuple[str, ...], expected_length: int) -> None:
