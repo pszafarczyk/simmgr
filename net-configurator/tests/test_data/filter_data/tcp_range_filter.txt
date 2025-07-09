@@ -1,0 +1,7 @@
+--
+-- Service Object <test-by-app-policy>
+--
+name: test-by-app-policy
+idle timeout: 0 second(s)
+members:
+    (1): service-range/protocol(tcp):start-port(22) end-port(22)

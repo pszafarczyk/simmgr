@@ -1,0 +1,7 @@
+--
+-- Service Object <X-c281b3a9e94dcfaaef1b028a8c501b656d4bb17e>
+--
+name: X-c281b3a9e94dcfaaef1b028a8c501b656d4bb17e
+idle timeout: 0 second(s)
+members:
+    (1): service-single/protocol(icmp):type(0) code(255)

@@ -1,0 +1,31 @@
+--
+-- Total 15 Policy Rule(s)
+--
+Index Action   Name                          Service                       From-alias                      	To-alias                        	App-Control 	Geolocation 
+1     Allowed  Any-INV                       Any                           Any                             	Any                             	           	Global      
+2     Allowed  FTP                           FTP                           Any-Trusted                     	Any-External                    	           	Global      
+                                                                           Any-Optional                    	                               	           
+3     Allowed  WatchGuard Web UI             WG-Fireware-XTM-WebUI         Any-Trusted                     	Firebox                         	           	Global      
+                                                                           Any-Optional                    	                               	           
+4     Allowed  Ping                          Ping                          Any-Trusted                     	Any                             	           	Global      
+                                                                           Any-Optional                    	                               	           
+5     Allowed  WatchGuard                    WG-Firebox-Mgmt               Any-Trusted                     	Firebox                         	           	Global      
+                                                                           Any-Optional                    	                               	           
+6     Allowed  Outgoing                      TCP-UDP                       Any-Trusted                     	Any-External                    	           	Global      
+                                                                           Any-Optional                    	                               	           
+7     Allowed  X-0e9495c7713dd296e29911123274e2a4e6ab6470X-bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f10.0.0.1                        	10.0.0.2                        	           	Global      
+8     Allowed  b5634d5772f590b6d8dc6e79daf6210dc397ca46-Xbf21a9e8fbc5a3846fb05b4fa0859e0917b2202f-X10.0.0.1                        	192.168.0.1                     	           	Global      
+                                                                           10.0.0.2                        	                               	           
+                                                                           10.0.0.3                        	                               	           
+                                                                           10.0.0.4                        	                               	           
+9     Allowed  X-35af823c2522111cdedfb40b00dd974bedb1f139X-c281b3a9e94dcfaaef1b028a8c501b656d4bb17e1.1.1.1                         	1.1.1.1                         	           	Global      
+                                                                           2.2.2.2                         	2.2.2.2                         	           
+10    Allowed  X-aaae571f4b84a0f8106358a6895c7eb262bca0a2X-c281b3a9e94dcfaaef1b028a8c501b656d4bb17e10.1.1.1                        	10.1.1.1                        	           	Global      
+                                                                           20.2.2.2                        	20.2.2.2                        	           
+11    Allowed  X-9932332f7e9201e2117027882d241beaefd0baa1X-c281b3a9e94dcfaaef1b028a8c501b656d4bb17e10.1.1.2                        	10.1.1.2                        	           	Global      
+                                                                           20.2.2.2                        	20.2.2.2                        	           
+12    Allowed  X-63a81d743866ead0382eadc481a4d05aa06957d2X-c281b3a9e94dcfaaef1b028a8c501b656d4bb17e10.1.1.2-10.1.1.5               	10.1.1.2-10.1.1.5               	           	Global      
+                                                                           20.2.2.2                        	20.2.2.2                        	           
+13    Allowed  X-e7072e98801382a7cb9886d3b42d670f0267f83bX-c281b3a9e94dcfaaef1b028a8c501b656d4bb17e20.0.0.0/24                     	20.0.0.0/24                     	           	Global      
+14    Allowed  X-aedbfdc8b85a3a910e057c5a1ac1452e9a9ef300X-c281b3a9e94dcfaaef1b028a8c501b656d4bb17e20.0.0.0/24                     	20.0.0.0/24                     	           	Global      
+15    Allowed  X-249d1fc106456f2a713e18aef7da8b8af33e382dX-c281b3a9e94dcfaaef1b028a8c501b656d4bb17e20.0.0.0/24                     	20.0.0.0/24                     	           	Global  

@@ -1,0 +1,12 @@
+[
+  {
+    "protocol": "tcp",
+    "port_low": "1521",
+    "port_high": ""
+  },
+  {
+    "protocol": "tcp",
+    "port_low": "1526",
+    "port_high": ""
+  }
+]
