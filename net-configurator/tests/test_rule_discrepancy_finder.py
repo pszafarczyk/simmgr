@@ -13,9 +13,9 @@ from net_configurator.rule_discrepancy_finder import RuleDiscrepancyFinder
 def create_ruleset() -> Callable[[str], set[Rule]]:
     """Fixture returning ruleset creation function."""
     rules: dict[str, dict[str, Any]] = {
-        'a': {'sources': ({'ip_low': '10.1.3.173'},), 'destinations': ({'ip_low': '172.31.0.100'},), 'filter': ({'protocol': 'icmp'},)},
-        'b': {'sources': ({'ip_low': '10.1.3.105'},), 'destinations': ({'ip_low': '0.0.0.0/0'},), 'filter': ({'protocol': 'icmp'},)},
-        'c': {'sources': ({'ip_low': '10.0.0.0/8'},), 'destinations': ({'ip_low': '0.0.0.0/0'},), 'filter': ({'protocol': 'udp', 'port_low': 53},)},
+        'a': {'sources': ({'ip_low': '10.1.3.173'},), 'destinations': ({'ip_low': '172.31.0.100'},), 'packet_filter': ({'protocol': 'icmp'},)},
+        'b': {'sources': ({'ip_low': '10.1.3.105'},), 'destinations': ({'ip_low': '0.0.0.0/0'},), 'packet_filter': ({'protocol': 'icmp'},)},
+        'c': {'sources': ({'ip_low': '10.0.0.0/8'},), 'destinations': ({'ip_low': '0.0.0.0/0'},), 'packet_filter': ({'protocol': 'udp', 'port_low': 53},)},
     }
 
     def _create_ruleset(symbols: str) -> set[Rule]:

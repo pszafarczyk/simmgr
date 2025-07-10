@@ -22,3 +22,8 @@ class Namer:
         hasher.update(json_dump.encode())
         rule_hash = hasher.hexdigest()
         return f'{IDENTIFIER_PREFIX}{rule_hash}'
+
+    @staticmethod
+    def get_owner_pattern() -> str:
+        """Returnes pattern of allowed owner string."""
+        return f'^{IDENTIFIER_PREFIX}[A-Za-z0-9-_]+$'

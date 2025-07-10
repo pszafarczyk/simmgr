@@ -14,41 +14,41 @@ from net_configurator.rules_source import ReaderInterface
 from net_configurator.rules_source import RulesSource
 
 
-def test_json_file_reader_with_valid_input(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Valid JSON source file."""
+def test_json_file_reader_with_valid_rules_returns_list(monkeypatch: pytest.MonkeyPatch) -> None:
+    """JSONFileReader returns list for file with JSON array."""
     monkeypatch.setattr(Path, 'open', lambda path: StringIO())  # noqa: ARG005
     monkeypatch.setattr(json, 'load', lambda file: [{'a': 1}])  # noqa: ARG005
     reader = JSONFileReader('file.json')
-    result = reader.read_all()
+    result = reader.read_all_rules()
     assert isinstance(result, list)
 
 
-def test_json_file_reader_without_array(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_json_file_reader_without_array_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     """JSONFileReader with no top-level array in JSON should raise."""
     monkeypatch.setattr(Path, 'open', lambda path: StringIO())  # noqa: ARG005
     monkeypatch.setattr(json, 'load', lambda file: {'a': 1})  # noqa: ARG005
     reader = JSONFileReader('file.json')
     with pytest.raises(TypeError, match='File content is not an array'):
-        reader.read_all()
+        reader.read_all_rules()
 
 
 def test_rules_source_calls_reader() -> None:
-    """RulesSource.read_all() calls reader."""
+    """RulesSource.read_all_rules() calls reader."""
     dummy_reader = Mock(spec=ReaderInterface)
     rules_source = RulesSource(dummy_reader)
     with suppress(TypeError):
-        rules_source.read_all()
-    dummy_reader.read_all.assert_called_once()
+        rules_source.read_all_rules()
+    dummy_reader.read_all_rules.assert_called_once()
 
 
 def test_rules_source_with_valid_input() -> None:
     """RulesSource with valid reader data gives valid output."""
     dummy_reader = Mock(spec=ReaderInterface)
-    dummy_reader.read_all.return_value = [
-        {'sources': [{'ip_low': '10.1.3.173'}], 'destinations': [{'ip_low': '172.31.0.100'}], 'filter': [{'protocol': 'icmp'}]}
+    dummy_reader.read_all_rules.return_value = [
+        {'sources': [{'ip_low': '10.1.3.173'}], 'destinations': [{'ip_low': '172.31.0.100'}], 'packet_filter': [{'protocol': 'icmp'}]}
     ]
     rules_source = RulesSource(dummy_reader)
-    rules = rules_source.read_all()
+    rules = rules_source.read_all_rules()
     assert isinstance(rules, set)
     assert len(rules) == 1
     for rule in rules:
@@ -58,8 +58,8 @@ def test_rules_source_with_valid_input() -> None:
 def test_rules_source_with_empty_array() -> None:
     """RulesSource with empty array."""
     dummy_reader = Mock(spec=ReaderInterface)
-    dummy_reader.read_all.return_value = []
+    dummy_reader.read_all_rules.return_value = []
     rules_source = RulesSource(dummy_reader)
-    rules = rules_source.read_all()
+    rules = rules_source.read_all_rules()
     assert isinstance(rules, set)
     assert len(rules) == 0
