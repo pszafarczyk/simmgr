@@ -5,6 +5,7 @@ from typing import Protocol
 
 from pydantic import RootModel
 
+from net_configurator.rule import Owner
 from net_configurator.rule import PacketFilter
 from net_configurator.rule import Rule
 from net_configurator.rules_source import ReaderInterface
@@ -30,7 +31,7 @@ class WriterInterface(Protocol):
         """delete_filter stub."""
         ...
 
-    def add_owner(self, owner: str) -> None:
+    def add_owner(self, owner: Owner) -> None:
         """add_owner stub."""
         ...
 
@@ -91,13 +92,13 @@ class JSONFileWriter:
             filter_identifier (str): Identifier of packet filter to delete.
         """
 
-    def add_owner(self, owner: str) -> None:
+    def add_owner(self, owner: Owner) -> None:
         """Adds owner to file.
 
         Method is not implemented - no need to do antyhing in file.
 
         Args:
-            owner (str): Owner to add.
+            owner (Owner): Owner to add.
         """
 
     def delete_owner(self, owner_identifier: str) -> None:
@@ -172,11 +173,11 @@ class RulesTarget(RulesSource):
         """
         self.__writer.delete_filter(filter_identifier)
 
-    def add_owner(self, owner: str) -> None:
+    def add_owner(self, owner: Owner) -> None:
         """Adds owner to target writer.
 
         Args:
-            owner (str): Owner to add.
+            owner (Owner): Owner to add.
         """
         self.__writer.add_owner(owner)
 
