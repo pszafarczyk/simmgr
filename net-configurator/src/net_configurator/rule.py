@@ -6,6 +6,7 @@ from typing import Annotated
 from typing import Any
 from typing import cast
 from typing import Literal
+from typing import Protocol
 
 from annotated_types import Len
 from pydantic import BaseModel
@@ -17,6 +18,15 @@ from pydantic import StringConstraints
 from pydantic import ValidationInfo
 
 from net_configurator.namer import Namer
+
+
+class IdentifiedModelInterface(Protocol):
+    """Interface with attribute 'identifier'."""
+
+    @property
+    def identifier(self) -> str:
+        """Returns object's identifier."""
+        ...
 
 
 class IdentifiedBaseModel(BaseModel):
