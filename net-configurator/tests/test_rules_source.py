@@ -8,8 +8,8 @@ from unittest.mock import Mock
 
 import pytest
 
+from net_configurator.json_file_reader import JSONFileReader
 from net_configurator.rule import Rule
-from net_configurator.rules_source import JSONFileReader
 from net_configurator.rules_source import ReaderInterface
 from net_configurator.rules_source import RulesSource
 
@@ -19,7 +19,8 @@ def test_json_file_reader_with_valid_rules_returns_list(monkeypatch: pytest.Monk
     monkeypatch.setattr(Path, 'open', lambda path: StringIO())  # noqa: ARG005
     monkeypatch.setattr(json, 'load', lambda file: [{'a': 1}])  # noqa: ARG005
     reader = JSONFileReader('file.json')
-    result = reader.read_all_rules()
+    with reader:
+        result = reader.read_all_rules()
     assert isinstance(result, list)
 
 
@@ -28,7 +29,7 @@ def test_json_file_reader_without_array_raises(monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setattr(Path, 'open', lambda path: StringIO())  # noqa: ARG005
     monkeypatch.setattr(json, 'load', lambda file: {'a': 1})  # noqa: ARG005
     reader = JSONFileReader('file.json')
-    with pytest.raises(TypeError, match='File content is not an array'):
+    with pytest.raises(TypeError, match='File content is not an array'), reader:
         reader.read_all_rules()
 
 

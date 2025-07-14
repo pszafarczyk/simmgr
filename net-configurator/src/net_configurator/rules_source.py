@@ -1,17 +1,32 @@
 """Importing rules from external source."""
 
-from functools import cached_property
-import json
-from pathlib import Path
+from types import TracebackType
 from typing import Any
 from typing import Protocol
 
+from net_configurator.rule import Owner
 from net_configurator.rule import PacketFilter
 from net_configurator.rule import Rule
 
 
 class ReaderInterface(Protocol):
     """Interface with method read_all."""
+
+    def __enter__(self) -> None:
+        """Enter method for context manager."""
+        ...
+
+    def __exit__(self, exc_type: type[BaseException] | None, exc_value: BaseException | None, exc_tb: TracebackType | None) -> None:
+        """Exit method for context manager."""
+        ...
+
+    def open(self) -> None:
+        """Opens reader."""
+        ...
+
+    def close(self) -> None:
+        """Closes reader."""
+        ...
 
     def read_all_rules(self) -> list[Any]:
         """read_all_rules stub."""
@@ -26,93 +41,6 @@ class ReaderInterface(Protocol):
         ...
 
 
-class JSONFileReader:
-    """Reader for JSON formatted files."""
-
-    def __init__(self, path: str | Path) -> None:
-        """Sets the source path.
-
-        Args:
-            path (str | Path): Path of source file.
-        """
-        self.__path = Path(path)
-
-    @cached_property
-    def __file_decoded(self) -> list[Any]:
-        """Returns JSON array from file as list.
-
-        Returns:
-            list: List of values read from JSON file.
-
-        Raises:
-            FileNotFoundError: If source file cannot be found.
-            IsADirectoryError: If path is a directory.
-            JSONDecodeError: If content is not valid JSON data
-            NotADirectoryError: If parent in path is not directory.
-            OSError: For low level errors while reading file.
-            PermissionError: If permissions do not allow to open file.
-            TypeError: If JSON data is not array.
-        """
-        with self.__path.open() as file:
-            data = json.load(file)
-            if not isinstance(data, list):
-                msg = 'File content is not an array'
-                raise TypeError(msg)
-            return data
-
-    def read_all_rules(self) -> list[Any]:
-        """Returns JSON array from file as list.
-
-        Returns:
-            list: List of values read from JSON file.
-
-        Raises:
-            FileNotFoundError: If source file cannot be found.
-            IsADirectoryError: If path is a directory.
-            JSONDecodeError: If content is not valid JSON data
-            NotADirectoryError: If parent in path is not directory.
-            OSError: For low level errors while reading file.
-            PermissionError: If permissions do not allow to open file.
-            TypeError: If JSON data is not array.
-        """
-        return self.__file_decoded
-
-    def read_all_filters(self) -> list[Any]:
-        """Returns packet_filter JSON objects from file as list.
-
-        Returns:
-            list: List of packet_filter values read from JSON file.
-
-        Raises:
-            FileNotFoundError: If source file cannot be found.
-            IsADirectoryError: If path is a directory.
-            JSONDecodeError: If content is not valid JSON data
-            NotADirectoryError: If parent in path is not directory.
-            OSError: For low level errors while reading file.
-            PermissionError: If permissions do not allow to open file.
-            TypeError: If JSON data is not array.
-        """
-        return [rule['packet_filter'] for rule in self.__file_decoded if isinstance(rule, dict) and 'packet_filter' in rule]
-
-    def read_all_owners(self) -> list[str]:
-        """Returns owners from file as list.
-
-        Returns:
-            list: List of owners values read from JSON file.
-
-        Raises:
-            FileNotFoundError: If source file cannot be found.
-            IsADirectoryError: If path is a directory.
-            JSONDecodeError: If content is not valid JSON data
-            NotADirectoryError: If parent in path is not directory.
-            OSError: For low level errors while reading file.
-            PermissionError: If permissions do not allow to open file.
-            TypeError: If JSON data is not array.
-        """
-        owner_lists = [rule['owners'] for rule in self.__file_decoded if isinstance(rule, dict) and 'owners' in rule]
-        return [owner for owner_list in owner_lists for owner in owner_list]
-
-
 class RulesSource:
     """Source of rules read with given ReaderInterface."""
 
@@ -123,6 +51,22 @@ class RulesSource:
             source_reader (ReaderInterface): Object used to read rules from.
         """
         self.__reader = source_reader
+
+    def __enter__(self) -> None:
+        """Enter method for context manager."""
+        self.open()
+
+    def __exit__(self, exc_type: type[BaseException] | None, exc_value: BaseException | None, exc_tb: TracebackType | None) -> None:
+        """Exit method for context manager."""
+        self.close()
+
+    def open(self) -> None:
+        """Opens source."""
+        self.__reader.open()
+
+    def close(self) -> None:
+        """Closes source."""
+        self.__reader.close()
 
     def read_all_rules(self) -> set[Rule]:
         """Returns set of rules from external source.
@@ -150,7 +94,7 @@ class RulesSource:
         """
         return {PacketFilter(packet_filter) for packet_filter in self.__reader.read_all_filters()}
 
-    def read_all_owners(self) -> set[str]:
+    def read_all_owners(self) -> set[Owner]:
         """Returns set of owners from external source.
 
         Returns:
@@ -164,4 +108,4 @@ class RulesSource:
         if any(not isinstance(owner, str) for owner in owners):
             msg = 'Not all owners are strings'
             raise TypeError(msg)
-        return set(owners)
+        return {Owner(owner) for owner in owners}
