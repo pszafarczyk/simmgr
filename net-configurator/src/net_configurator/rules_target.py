@@ -51,57 +51,75 @@ class RulesTarget(RulesSource[ReaderWriterInterface]):
         super().__init__(source_handler=target_handler)
 
     def add_rule(self, rule: Rule) -> None:
-        """Adds rule to target writer.
+        """Adds rule to target handler.
 
         Args:
             rule (Rule): Rule to add.
+
+        Raises:
+            Exception: Exceptions raised by add_rule of given handler.
         """
         self._handler.add_rule(rule)
 
     def delete_rule(self, rule_identifier: str) -> None:
-        """Deletes rule at target writer.
+        """Deletes rule from target handler.
 
         Args:
             rule_identifier (str): Identifier of rule to delete.
+
+        Raises:
+            Exception: Exceptions raised by delete_rule of given handler.
         """
         self._handler.delete_rule(rule_identifier)
 
     def add_filter(self, packet_filter: PacketFilter) -> None:
-        """Adds packet filter to target writer.
+        """Adds packet filter to target handler.
 
         Args:
             packet_filter (PacketFilter): Packet filter to add.
+
+        Raises:
+            Exception: Exceptions raised by add_filter of given handler.
         """
         self._handler.add_filter(packet_filter)
 
     def delete_filter(self, filter_identifier: str) -> None:
-        """Deletes packet filter at target writer.
+        """Deletes packet filter at target handler.
 
         Args:
             filter_identifier (str): Identifier of packet filter to delete.
+
+        Raises:
+            Exception: Exceptions raised by delete_filter of given handler.
         """
         self._handler.delete_filter(filter_identifier)
 
     def add_owner(self, owner: Owner) -> None:
-        """Adds owner to target writer.
+        """Adds owner to target handler.
 
         Args:
             owner (Owner): Owner to add.
+
+        Raises:
+            Exception: Exceptions raised by add_owner of given handler.
         """
         self._handler.add_owner(owner)
 
     def delete_owner(self, owner_identifier: str) -> None:
-        """Deletes owner at target writer.
+        """Deletes owner at target handler.
 
         Args:
             owner_identifier (str): Identifier of owner to delete.
+
+        Raises:
+            Exception: Exceptions raised by delete_owner of given handler.
         """
         self._handler.delete_owner(owner_identifier)
 
     def apply_changes(self) -> None:
-        """Applies changes to target writer.
+        """Applies changes to target handler.
 
         Raises:
-            Exception: Exceptions raised by apply_changes of given target writer.
+            Exception: Exceptions raised by apply_changes of given handler.
         """
         self._handler.apply_changes()

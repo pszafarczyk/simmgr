@@ -6,9 +6,15 @@ from typing import Generic
 from typing import Protocol
 from typing import TypeVar
 
+from pydantic import ValidationError
+
 from net_configurator.rule import Owner
 from net_configurator.rule import PacketFilter
 from net_configurator.rule import Rule
+
+
+class DeserializationError(Exception):
+    """Exception raised when external data cannot be deserialized."""
 
 
 class ReaderInterface(Protocol):
@@ -50,7 +56,7 @@ class RulesSource(Generic[T]):
     """Source of rules read with given ReaderInterface."""
 
     def __init__(self, source_handler: T) -> None:
-        """Sets the source reader.
+        """Sets the source handler.
 
         Args:
             source_handler (ReaderInterface): Object used to read from.
@@ -58,59 +64,82 @@ class RulesSource(Generic[T]):
         self._handler = source_handler
 
     def __enter__(self) -> None:
-        """Enter method for context manager."""
+        """Enter method for context manager.
+
+        Raises:
+            Exception: Exceptions raised by open of given handler.
+        """
         self.open()
 
     def __exit__(self, exc_type: type[BaseException] | None, exc_value: BaseException | None, exc_tb: TracebackType | None) -> None:
-        """Exit method for context manager."""
+        """Exit method for context manager.
+
+        Raises:
+            Exception: Exceptions raised by close of given handler.
+        """
         self.close()
 
     def open(self) -> None:
-        """Opens source."""
+        """Opens source.
+
+        Raises:
+            Exception: Exceptions raised by open of given handler.
+        """
         self._handler.open()
 
     def close(self) -> None:
-        """Closes source."""
+        """Closes source.
+
+        Raises:
+            Exception: Exceptions raised by close of given handler.
+        """
         self._handler.close()
 
     def read_all_rules(self) -> set[Rule]:
         """Returns set of rules from external source.
 
         Returns:
-            set[Rule]: Rules read from reader.
+            set[Rule]: Rules read from handler.
 
         Raises:
-            ValidationError: If input data violates Rule's restrictions.
-            TypeError: If JSON data is not array.
-            Exception: Other types raised by read_all of given reader.
+            DeserializationError: when rules cannot be deserialized.
+            Exception: Exceptions raised by read_all_rules of given handler.
         """
-        return {Rule(**rule) for rule in self._handler.read_all_rules()}
+        try:
+            return {Rule(**rule) for rule in self._handler.read_all_rules()}
+        except ValidationError as e:
+            msg = 'Rules cannot be deserialized'
+            raise DeserializationError(msg) from e
 
     def read_all_filters(self) -> set[PacketFilter]:
         """Returns set of filters from external source.
 
         Returns:
-            set[PacketFilter]: Filters read from reader.
+            set[PacketFilter]: Filters read from handler.
 
         Raises:
-            ValidationError: If input data violates PacketFilter's restrictions.
-            TypeError: If JSON data is not array.
-            Exception: Other types raised by read_all of given reader.
+            DeserializationError: when filters cannot be deserialized.
+            Exception: Exceptions raised by read_all_filters of given handler.
         """
-        return {PacketFilter(packet_filter) for packet_filter in self._handler.read_all_filters()}
+        try:
+            return {PacketFilter(packet_filter) for packet_filter in self._handler.read_all_filters()}
+        except ValidationError as e:
+            msg = 'Filters cannot be deserialized'
+            raise DeserializationError(msg) from e
 
     def read_all_owners(self) -> set[Owner]:
         """Returns set of owners from external source.
 
         Returns:
-            set[str]: Owners read from reader.
+            set[Owner]: Owners read from handler.
 
         Raises:
-            TypeError: If JSON data is not array or owner is not string.
-            Exception: Other types raised by read_all of given reader.
+            DeserializationError: when owners cannot be deserialized.
+            Exception: Exceptions raised by read_all_owners of given handler.
         """
         owners = self._handler.read_all_owners()
-        if any(not isinstance(owner, str) for owner in owners):
-            msg = 'Not all owners are strings'
-            raise TypeError(msg)
-        return {Owner(owner) for owner in owners}
+        try:
+            return {Owner(owner) for owner in owners}
+        except ValidationError as e:
+            msg = 'Owners cannot be deserialized'
+            raise DeserializationError(msg) from e
