@@ -4,6 +4,7 @@ from pathlib import Path
 
 from pydantic import RootModel
 
+from net_configurator.json_file_reader import FileAccessError
 from net_configurator.json_file_reader import FileNotOpenedError
 from net_configurator.json_file_reader import JSONFileReader
 from net_configurator.rule import Owner
@@ -83,16 +84,17 @@ class JSONFileReaderWriter(JSONFileReader):
         """Creates file with applied changes.
 
         Raises:
-            FileNotFoundError: If parent directory not found.
-            IsADirectoryError: If path is a directory.
-            NotADirectoryError: If parent in path is not directory.
-            OSError: For low level errors while reading file.
-            PermissionError: If permissions do not allow to open file.
+            FileAccessError: If writing to file is not possible.
+            FileNotOpenedError: If file has not beed opened.
         """
         RuleList = RootModel[list[Rule]]  # noqa: N806
         rules = RuleList(list(self.__rules))
         if self._file:
-            self._file.write(rules.model_dump_json(indent=2, exclude_none=True))
+            try:
+                self._file.write(rules.model_dump_json(indent=2, exclude_none=True))
+            except OSError as e:
+                msg = 'Cannot write to file'
+                raise FileAccessError(msg) from e
         else:
             msg = 'File not opened before writing'
             raise FileNotOpenedError(msg)

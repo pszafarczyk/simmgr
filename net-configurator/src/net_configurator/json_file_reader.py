@@ -8,6 +8,10 @@ from typing import Any
 from typing import IO
 
 
+class FileAccessError(Exception):
+    """Exception raised in case of problems accessing file."""
+
+
 class FileNotOpenedError(RuntimeError):
     """Exception raised when reading from closed file."""
 
@@ -31,22 +35,46 @@ class JSONFileReader:
         self._file: IO[str] | None = None
 
     def __enter__(self) -> None:
-        """Enter method for context manager."""
+        """Enter method for context manager.
+
+        Raises:
+            FileAccessError: If file cannot be opened.
+        """
         self.open()
 
     def __exit__(self, exc_type: type[BaseException] | None, exc_value: BaseException | None, exc_tb: TracebackType | None) -> None:
-        """Exit method for context manager."""
+        """Exit method for context manager.
+
+        Raises:
+            FileAccessError: If file cannot be closed.
+        """
         self.close()
 
     def open(self) -> None:
-        """Opens file."""
+        """Opens file.
+
+        Raises:
+            FileAccessError: If file cannot be opened.
+        """
         if not self._file:
-            self._file = self.__path.open(mode=self._file_mode)
+            try:
+                self._file = self.__path.open(mode=self._file_mode)
+            except (FileNotFoundError, IsADirectoryError, NotADirectoryError, OSError, PermissionError) as e:
+                msg = f'Cannot open {self.__path!s}'
+                raise FileAccessError(msg) from e
 
     def close(self) -> None:
-        """Closes file."""
+        """Closes file.
+
+        Raises:
+            FileAccessError: If file cannot be closed.
+        """
         if self._file:
-            self._file.close()
+            try:
+                self._file.close()
+            except OSError as e:
+                msg = f'Cannot close {self.__path!s}'
+                raise FileAccessError(msg) from e
             self._file = None
 
     @cached_property
@@ -57,17 +85,15 @@ class JSONFileReader:
             list: List of values read from JSON file.
 
         Raises:
-            FileNotFoundError: If source file cannot be found.
-            FileNotOpened: If file has not been opened.
-            IsADirectoryError: If path is a directory.
-            JSONDecodeError: If content is not valid JSON data
-            NotADirectoryError: If parent in path is not directory.
-            NotJSONArrayError: If JSON data is not array.
-            OSError: For low level errors while reading file.
-            PermissionError: If permissions do not allow to open file.
+            FileNotOpenedError: If file has not beed opened.
+            NotJSONArrayError: If JSON is not valid or not array.
         """
         if self._file:
-            data = json.load(self._file)
+            try:
+                data = json.load(self._file)
+            except json.JSONDecodeError as e:
+                msg = 'File content is not valid JSON'
+                raise NotJSONArrayError(msg) from e
             if not isinstance(data, list):
                 msg = 'File content is not an array'
                 raise NotJSONArrayError(msg)
@@ -82,14 +108,8 @@ class JSONFileReader:
             list: List of values read from JSON file.
 
         Raises:
-            FileNotFoundError: If source file cannot be found.
-            FileNotOpened: If file has not been opened.
-            IsADirectoryError: If path is a directory.
-            JSONDecodeError: If content is not valid JSON data
-            NotADirectoryError: If parent in path is not directory.
-            NotJSONArrayError: If JSON data is not array.
-            OSError: For low level errors while reading file.
-            PermissionError: If permissions do not allow to open file.
+            FileNotOpenedError: If file has not beed opened.
+            NotJSONArrayError: If JSON is not valid or not array.
         """
         return self._file_decoded
 
@@ -100,14 +120,8 @@ class JSONFileReader:
             list: List of packet_filter values read from JSON file.
 
         Raises:
-            FileNotFoundError: If source file cannot be found.
-            FileNotOpened: If file has not been opened.
-            IsADirectoryError: If path is a directory.
-            JSONDecodeError: If content is not valid JSON data
-            NotADirectoryError: If parent in path is not directory.
-            NotJSONArrayError: If JSON data is not array.
-            OSError: For low level errors while reading file.
-            PermissionError: If permissions do not allow to open file.
+            FileNotOpenedError: If file has not beed opened.
+            NotJSONArrayError: If JSON is not valid or not array.
         """
         return [rule['packet_filter'] for rule in self._file_decoded if isinstance(rule, dict) and 'packet_filter' in rule]
 
@@ -118,14 +132,8 @@ class JSONFileReader:
             list: List of owners values read from JSON file.
 
         Raises:
-            FileNotFoundError: If source file cannot be found.
-            FileNotOpened: If file has not been opened.
-            IsADirectoryError: If path is a directory.
-            JSONDecodeError: If content is not valid JSON data
-            NotADirectoryError: If parent in path is not directory.
-            NotJSONArrayError: If JSON data is not array.
-            OSError: For low level errors while reading file.
-            PermissionError: If permissions do not allow to open file.
+            FileNotOpenedError: If file has not beed opened.
+            NotJSONArrayError: If JSON is not valid or not array.
         """
         owner_lists = [rule['owners'] for rule in self._file_decoded if isinstance(rule, dict) and 'owners' in rule]
         return [owner for owner_list in owner_lists for owner in owner_list]
