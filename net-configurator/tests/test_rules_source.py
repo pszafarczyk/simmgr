@@ -16,7 +16,7 @@ from net_configurator.rules_source import RulesSource
 
 def test_json_file_reader_with_valid_rules_returns_list(monkeypatch: pytest.MonkeyPatch) -> None:
     """JSONFileReader returns list for file with JSON array."""
-    monkeypatch.setattr(Path, 'open', lambda path: StringIO())  # noqa: ARG005
+    monkeypatch.setattr(Path, 'open', lambda path, mode: StringIO())  # noqa: ARG005
     monkeypatch.setattr(json, 'load', lambda file: [{'a': 1}])  # noqa: ARG005
     reader = JSONFileReader('file.json')
     with reader:
@@ -26,7 +26,7 @@ def test_json_file_reader_with_valid_rules_returns_list(monkeypatch: pytest.Monk
 
 def test_json_file_reader_without_array_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     """JSONFileReader with no top-level array in JSON should raise."""
-    monkeypatch.setattr(Path, 'open', lambda path: StringIO())  # noqa: ARG005
+    monkeypatch.setattr(Path, 'open', lambda path, mode: StringIO())  # noqa: ARG005
     monkeypatch.setattr(json, 'load', lambda file: {'a': 1})  # noqa: ARG005
     reader = JSONFileReader('file.json')
     with pytest.raises(TypeError, match='File content is not an array'), reader:

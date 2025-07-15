@@ -19,6 +19,8 @@ class NotJSONArrayError(TypeError):
 class JSONFileReader:
     """Reader for JSON formatted files."""
 
+    _file_mode: str = 'r'
+
     def __init__(self, path: str | Path) -> None:
         """Sets the source path.
 
@@ -26,7 +28,7 @@ class JSONFileReader:
             path (str | Path): Path of source file.
         """
         self.__path = Path(path)
-        self.__file: IO[str] | None = None
+        self._file: IO[str] | None = None
 
     def __enter__(self) -> None:
         """Enter method for context manager."""
@@ -38,17 +40,17 @@ class JSONFileReader:
 
     def open(self) -> None:
         """Opens file."""
-        if not self.__file:
-            self.__file = self.__path.open()
+        if not self._file:
+            self._file = self.__path.open(mode=self._file_mode)
 
     def close(self) -> None:
         """Closes file."""
-        if self.__file:
-            self.__file.close()
-            self.__file = None
+        if self._file:
+            self._file.close()
+            self._file = None
 
     @cached_property
-    def __file_decoded(self) -> list[Any]:
+    def _file_decoded(self) -> list[Any]:
         """Returns JSON array from file as list.
 
         Returns:
@@ -64,13 +66,13 @@ class JSONFileReader:
             OSError: For low level errors while reading file.
             PermissionError: If permissions do not allow to open file.
         """
-        if self.__file:
-            data = json.load(self.__file)
+        if self._file:
+            data = json.load(self._file)
             if not isinstance(data, list):
                 msg = 'File content is not an array'
                 raise NotJSONArrayError(msg)
             return data
-        msg = 'File not opened before accessing'
+        msg = 'File not opened before reading'
         raise FileNotOpenedError(msg)
 
     def read_all_rules(self) -> list[Any]:
@@ -89,7 +91,7 @@ class JSONFileReader:
             OSError: For low level errors while reading file.
             PermissionError: If permissions do not allow to open file.
         """
-        return self.__file_decoded
+        return self._file_decoded
 
     def read_all_filters(self) -> list[Any]:
         """Returns packet_filter JSON objects from file as list.
@@ -107,7 +109,7 @@ class JSONFileReader:
             OSError: For low level errors while reading file.
             PermissionError: If permissions do not allow to open file.
         """
-        return [rule['packet_filter'] for rule in self.__file_decoded if isinstance(rule, dict) and 'packet_filter' in rule]
+        return [rule['packet_filter'] for rule in self._file_decoded if isinstance(rule, dict) and 'packet_filter' in rule]
 
     def read_all_owners(self) -> list[str]:
         """Returns owners from file as list.
@@ -125,5 +127,5 @@ class JSONFileReader:
             OSError: For low level errors while reading file.
             PermissionError: If permissions do not allow to open file.
         """
-        owner_lists = [rule['owners'] for rule in self.__file_decoded if isinstance(rule, dict) and 'owners' in rule]
+        owner_lists = [rule['owners'] for rule in self._file_decoded if isinstance(rule, dict) and 'owners' in rule]
         return [owner for owner_list in owner_lists for owner in owner_list]

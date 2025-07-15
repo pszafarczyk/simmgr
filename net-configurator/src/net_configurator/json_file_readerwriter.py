@@ -1,16 +1,20 @@
-"""Writer for JSON formatted files."""
+"""Reader/writer for JSON formatted files."""
 
 from pathlib import Path
 
 from pydantic import RootModel
 
+from net_configurator.json_file_reader import FileNotOpenedError
+from net_configurator.json_file_reader import JSONFileReader
 from net_configurator.rule import Owner
 from net_configurator.rule import PacketFilter
 from net_configurator.rule import Rule
 
 
-class JSONFileWriter:
-    """Writer for JSON formatted files."""
+class JSONFileReaderWriter(JSONFileReader):
+    """Reader/writer for JSON formatted files."""
+
+    _file_mode: str = 'r+'
 
     def __init__(self, path: str | Path) -> None:
         """Sets the destination path.
@@ -18,7 +22,7 @@ class JSONFileWriter:
         Args:
             path (str | Path): Path of destination file.
         """
-        self.__path = Path(path)
+        super().__init__(path)
         self.__rules: set[Rule] = set()
 
     def add_rule(self, rule: Rule) -> None:
@@ -87,5 +91,8 @@ class JSONFileWriter:
         """
         RuleList = RootModel[list[Rule]]  # noqa: N806
         rules = RuleList(list(self.__rules))
-        with self.__path.open(mode='w') as file:
-            file.write(rules.model_dump_json(indent=2, exclude_none=True))
+        if self._file:
+            self._file.write(rules.model_dump_json(indent=2, exclude_none=True))
+        else:
+            msg = 'File not opened before writing'
+            raise FileNotOpenedError(msg)

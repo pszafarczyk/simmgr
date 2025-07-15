@@ -9,8 +9,8 @@ from net_configurator.rules_source import ReaderInterface
 from net_configurator.rules_source import RulesSource
 
 
-class WriterInterface(Protocol):
-    """Interface with methods for changing rules."""
+class ReaderWriterInterface(Protocol, ReaderInterface):
+    """Interface with methods for reading and writing."""
 
     def add_rule(self, rule: Rule) -> None:
         """add_rule stub."""
@@ -41,20 +41,16 @@ class WriterInterface(Protocol):
         ...
 
 
-class RulesTarget(RulesSource):
-    """Target for rules to be read (ReaderInterface) and written (WriterInterface)."""
+class RulesTarget(RulesSource[ReaderWriterInterface]):
+    """Target for rules to be read and written."""
 
-    def __init__(self, target_reader: ReaderInterface, target_writer: WriterInterface) -> None:
-        """Sets target's reader and writer.
-
-        Target reader and writer can be the same object.
+    def __init__(self, target_handler: ReaderWriterInterface) -> None:
+        """Sets target's reader/writer.
 
         Args:
-            target_reader (ReaderInterface): Object used to read rules from.
-            target_writer (WriterInterface): Object used to write rules to.
+            target_handler (ReaderWriterInterface): Object used to read from/write to.
         """
-        super().__init__(source_reader=target_reader)
-        self.__writer = target_writer
+        super().__init__(source_handler=target_handler)
 
     def add_rule(self, rule: Rule) -> None:
         """Adds rule to target writer.
@@ -62,7 +58,7 @@ class RulesTarget(RulesSource):
         Args:
             rule (Rule): Rule to add.
         """
-        self.__writer.add_rule(rule)
+        self._handler.add_rule(rule)
 
     def delete_rule(self, rule_identifier: str) -> None:
         """Deletes rule at target writer.
@@ -70,7 +66,7 @@ class RulesTarget(RulesSource):
         Args:
             rule_identifier (str): Identifier of rule to delete.
         """
-        self.__writer.delete_rule(rule_identifier)
+        self._handler.delete_rule(rule_identifier)
 
     def add_filter(self, packet_filter: PacketFilter) -> None:
         """Adds packet filter to target writer.
@@ -78,7 +74,7 @@ class RulesTarget(RulesSource):
         Args:
             packet_filter (PacketFilter): Packet filter to add.
         """
-        self.__writer.add_filter(packet_filter)
+        self._handler.add_filter(packet_filter)
 
     def delete_filter(self, filter_identifier: str) -> None:
         """Deletes packet filter at target writer.
@@ -86,7 +82,7 @@ class RulesTarget(RulesSource):
         Args:
             filter_identifier (str): Identifier of packet filter to delete.
         """
-        self.__writer.delete_filter(filter_identifier)
+        self._handler.delete_filter(filter_identifier)
 
     def add_owner(self, owner: Owner) -> None:
         """Adds owner to target writer.
@@ -94,7 +90,7 @@ class RulesTarget(RulesSource):
         Args:
             owner (Owner): Owner to add.
         """
-        self.__writer.add_owner(owner)
+        self._handler.add_owner(owner)
 
     def delete_owner(self, owner_identifier: str) -> None:
         """Deletes owner at target writer.
@@ -102,7 +98,7 @@ class RulesTarget(RulesSource):
         Args:
             owner_identifier (str): Identifier of owner to delete.
         """
-        self.__writer.delete_owner(owner_identifier)
+        self._handler.delete_owner(owner_identifier)
 
     def apply_changes(self) -> None:
         """Applies changes to target writer.
@@ -110,4 +106,4 @@ class RulesTarget(RulesSource):
         Raises:
             Exception: Exceptions raised by apply_changes of given target writer.
         """
-        self.__writer.apply_changes()
+        self._handler.apply_changes()

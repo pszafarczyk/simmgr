@@ -2,7 +2,9 @@
 
 from types import TracebackType
 from typing import Any
+from typing import Generic
 from typing import Protocol
+from typing import TypeVar
 
 from net_configurator.rule import Owner
 from net_configurator.rule import PacketFilter
@@ -10,7 +12,7 @@ from net_configurator.rule import Rule
 
 
 class ReaderInterface(Protocol):
-    """Interface with method read_all."""
+    """Interface with methods for reading."""
 
     def __enter__(self) -> None:
         """Enter method for context manager."""
@@ -41,16 +43,19 @@ class ReaderInterface(Protocol):
         ...
 
 
-class RulesSource:
+T = TypeVar('T', bound=ReaderInterface)
+
+
+class RulesSource(Generic[T]):
     """Source of rules read with given ReaderInterface."""
 
-    def __init__(self, source_reader: ReaderInterface) -> None:
+    def __init__(self, source_handler: T) -> None:
         """Sets the source reader.
 
         Args:
-            source_reader (ReaderInterface): Object used to read rules from.
+            source_handler (ReaderInterface): Object used to read from.
         """
-        self.__reader = source_reader
+        self._handler = source_handler
 
     def __enter__(self) -> None:
         """Enter method for context manager."""
@@ -62,11 +67,11 @@ class RulesSource:
 
     def open(self) -> None:
         """Opens source."""
-        self.__reader.open()
+        self._handler.open()
 
     def close(self) -> None:
         """Closes source."""
-        self.__reader.close()
+        self._handler.close()
 
     def read_all_rules(self) -> set[Rule]:
         """Returns set of rules from external source.
@@ -79,7 +84,7 @@ class RulesSource:
             TypeError: If JSON data is not array.
             Exception: Other types raised by read_all of given reader.
         """
-        return {Rule(**rule) for rule in self.__reader.read_all_rules()}
+        return {Rule(**rule) for rule in self._handler.read_all_rules()}
 
     def read_all_filters(self) -> set[PacketFilter]:
         """Returns set of filters from external source.
@@ -92,7 +97,7 @@ class RulesSource:
             TypeError: If JSON data is not array.
             Exception: Other types raised by read_all of given reader.
         """
-        return {PacketFilter(packet_filter) for packet_filter in self.__reader.read_all_filters()}
+        return {PacketFilter(packet_filter) for packet_filter in self._handler.read_all_filters()}
 
     def read_all_owners(self) -> set[Owner]:
         """Returns set of owners from external source.
@@ -104,7 +109,7 @@ class RulesSource:
             TypeError: If JSON data is not array or owner is not string.
             Exception: Other types raised by read_all of given reader.
         """
-        owners = self.__reader.read_all_owners()
+        owners = self._handler.read_all_owners()
         if any(not isinstance(owner, str) for owner in owners):
             msg = 'Not all owners are strings'
             raise TypeError(msg)
