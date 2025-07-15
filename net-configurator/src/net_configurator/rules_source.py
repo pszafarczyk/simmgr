@@ -1,17 +1,40 @@
 """Importing rules from external source."""
 
-from functools import cached_property
-import json
-from pathlib import Path
+from types import TracebackType
 from typing import Any
+from typing import Generic
 from typing import Protocol
+from typing import TypeVar
 
+from pydantic import ValidationError
+
+from net_configurator.rule import Owner
 from net_configurator.rule import PacketFilter
 from net_configurator.rule import Rule
 
 
+class DeserializationError(Exception):
+    """Exception raised when external data cannot be deserialized."""
+
+
 class ReaderInterface(Protocol):
-    """Interface with method read_all."""
+    """Interface with methods for reading."""
+
+    def __enter__(self) -> None:
+        """Enter method for context manager."""
+        ...
+
+    def __exit__(self, exc_type: type[BaseException] | None, exc_value: BaseException | None, exc_tb: TracebackType | None) -> None:
+        """Exit method for context manager."""
+        ...
+
+    def open(self) -> None:
+        """Opens reader."""
+        ...
+
+    def close(self) -> None:
+        """Closes reader."""
+        ...
 
     def read_all_rules(self) -> list[Any]:
         """read_all_rules stub."""
@@ -26,142 +49,97 @@ class ReaderInterface(Protocol):
         ...
 
 
-class JSONFileReader:
-    """Reader for JSON formatted files."""
-
-    def __init__(self, path: str | Path) -> None:
-        """Sets the source path.
-
-        Args:
-            path (str | Path): Path of source file.
-        """
-        self.__path = Path(path)
-
-    @cached_property
-    def __file_decoded(self) -> list[Any]:
-        """Returns JSON array from file as list.
-
-        Returns:
-            list: List of values read from JSON file.
-
-        Raises:
-            FileNotFoundError: If source file cannot be found.
-            IsADirectoryError: If path is a directory.
-            JSONDecodeError: If content is not valid JSON data
-            NotADirectoryError: If parent in path is not directory.
-            OSError: For low level errors while reading file.
-            PermissionError: If permissions do not allow to open file.
-            TypeError: If JSON data is not array.
-        """
-        with self.__path.open() as file:
-            data = json.load(file)
-            if not isinstance(data, list):
-                msg = 'File content is not an array'
-                raise TypeError(msg)
-            return data
-
-    def read_all_rules(self) -> list[Any]:
-        """Returns JSON array from file as list.
-
-        Returns:
-            list: List of values read from JSON file.
-
-        Raises:
-            FileNotFoundError: If source file cannot be found.
-            IsADirectoryError: If path is a directory.
-            JSONDecodeError: If content is not valid JSON data
-            NotADirectoryError: If parent in path is not directory.
-            OSError: For low level errors while reading file.
-            PermissionError: If permissions do not allow to open file.
-            TypeError: If JSON data is not array.
-        """
-        return self.__file_decoded
-
-    def read_all_filters(self) -> list[Any]:
-        """Returns packet_filter JSON objects from file as list.
-
-        Returns:
-            list: List of packet_filter values read from JSON file.
-
-        Raises:
-            FileNotFoundError: If source file cannot be found.
-            IsADirectoryError: If path is a directory.
-            JSONDecodeError: If content is not valid JSON data
-            NotADirectoryError: If parent in path is not directory.
-            OSError: For low level errors while reading file.
-            PermissionError: If permissions do not allow to open file.
-            TypeError: If JSON data is not array.
-        """
-        return [rule['packet_filter'] for rule in self.__file_decoded if isinstance(rule, dict) and 'packet_filter' in rule]
-
-    def read_all_owners(self) -> list[str]:
-        """Returns owners from file as list.
-
-        Returns:
-            list: List of owners values read from JSON file.
-
-        Raises:
-            FileNotFoundError: If source file cannot be found.
-            IsADirectoryError: If path is a directory.
-            JSONDecodeError: If content is not valid JSON data
-            NotADirectoryError: If parent in path is not directory.
-            OSError: For low level errors while reading file.
-            PermissionError: If permissions do not allow to open file.
-            TypeError: If JSON data is not array.
-        """
-        owner_lists = [rule['owners'] for rule in self.__file_decoded if isinstance(rule, dict) and 'owners' in rule]
-        return [owner for owner_list in owner_lists for owner in owner_list]
+T = TypeVar('T', bound=ReaderInterface)
 
 
-class RulesSource:
+class RulesSource(Generic[T]):
     """Source of rules read with given ReaderInterface."""
 
-    def __init__(self, source_reader: ReaderInterface) -> None:
-        """Sets the source reader.
+    def __init__(self, source_handler: T) -> None:
+        """Sets the source handler.
 
         Args:
-            source_reader (ReaderInterface): Object used to read rules from.
+            source_handler (ReaderInterface): Object used to read from.
         """
-        self.__reader = source_reader
+        self._handler = source_handler
+
+    def __enter__(self) -> None:
+        """Enter method for context manager.
+
+        Raises:
+            Exception: Exceptions raised by open of given handler.
+        """
+        self.open()
+
+    def __exit__(self, exc_type: type[BaseException] | None, exc_value: BaseException | None, exc_tb: TracebackType | None) -> None:
+        """Exit method for context manager.
+
+        Raises:
+            Exception: Exceptions raised by close of given handler.
+        """
+        self.close()
+
+    def open(self) -> None:
+        """Opens source.
+
+        Raises:
+            Exception: Exceptions raised by open of given handler.
+        """
+        self._handler.open()
+
+    def close(self) -> None:
+        """Closes source.
+
+        Raises:
+            Exception: Exceptions raised by close of given handler.
+        """
+        self._handler.close()
 
     def read_all_rules(self) -> set[Rule]:
         """Returns set of rules from external source.
 
         Returns:
-            set[Rule]: Rules read from reader.
+            set[Rule]: Rules read from handler.
 
         Raises:
-            ValidationError: If input data violates Rule's restrictions.
-            TypeError: If JSON data is not array.
-            Exception: Other types raised by read_all of given reader.
+            DeserializationError: when rules cannot be deserialized.
+            Exception: Exceptions raised by read_all_rules of given handler.
         """
-        return {Rule(**rule) for rule in self.__reader.read_all_rules()}
+        try:
+            return {Rule(**rule) for rule in self._handler.read_all_rules()}
+        except ValidationError as e:
+            msg = 'Rules cannot be deserialized'
+            raise DeserializationError(msg) from e
 
     def read_all_filters(self) -> set[PacketFilter]:
         """Returns set of filters from external source.
 
         Returns:
-            set[PacketFilter]: Filters read from reader.
+            set[PacketFilter]: Filters read from handler.
 
         Raises:
-            ValidationError: If input data violates PacketFilter's restrictions.
-            TypeError: If JSON data is not array.
-            Exception: Other types raised by read_all of given reader.
+            DeserializationError: when filters cannot be deserialized.
+            Exception: Exceptions raised by read_all_filters of given handler.
         """
-        return {PacketFilter(packet_filter) for packet_filter in self.__reader.read_all_filters()}
+        try:
+            return {PacketFilter(packet_filter) for packet_filter in self._handler.read_all_filters()}
+        except ValidationError as e:
+            msg = 'Filters cannot be deserialized'
+            raise DeserializationError(msg) from e
 
-    def read_all_owners(self) -> set[str]:
+    def read_all_owners(self) -> set[Owner]:
         """Returns set of owners from external source.
 
         Returns:
-            set[str]: Owners read from reader.
+            set[Owner]: Owners read from handler.
 
         Raises:
-            TypeError: If JSON data is not array or owner is not string.
-            Exception: Other types raised by read_all of given reader.
+            DeserializationError: when owners cannot be deserialized.
+            Exception: Exceptions raised by read_all_owners of given handler.
         """
-        owners = self.__reader.read_all_owners()
-        if any(not isinstance(owner, str) for owner in owners):
-            msg = 'Not all owners are strings'
-            raise TypeError(msg)
-        return set(owners)
+        owners = self._handler.read_all_owners()
+        try:
+            return {Owner(owner) for owner in owners}
+        except ValidationError as e:
+            msg = 'Owners cannot be deserialized'
+            raise DeserializationError(msg) from e
