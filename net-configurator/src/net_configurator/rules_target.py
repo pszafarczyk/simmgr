@@ -1,7 +1,5 @@
 """RuleTarget represents destination for rules."""
 
-from typing import Protocol
-
 from net_configurator.rule import Owner
 from net_configurator.rule import PacketFilter
 from net_configurator.rule import Rule
@@ -9,36 +7,36 @@ from net_configurator.rules_source import ReaderInterface
 from net_configurator.rules_source import RulesSource
 
 
-class ReaderWriterInterface(Protocol, ReaderInterface):
+class ReaderWriterInterface(ReaderInterface):
     """Interface with methods for reading and writing."""
 
     def add_rule(self, rule: Rule) -> None:
         """add_rule stub."""
-        ...
+        ...  # noqa: PIE790
 
     def delete_rule(self, rule_identifier: str) -> None:
         """delete_rule stub."""
-        ...
+        ...  # noqa: PIE790
 
     def add_filter(self, packet_filter: PacketFilter) -> None:
         """add_filter stub."""
-        ...
+        ...  # noqa: PIE790
 
     def delete_filter(self, filter_identifier: str) -> None:
         """delete_filter stub."""
-        ...
+        ...  # noqa: PIE790
 
     def add_owner(self, owner: Owner) -> None:
         """add_owner stub."""
-        ...
+        ...  # noqa: PIE790
 
     def delete_owner(self, owner_identifier: str) -> None:
         """delete_owner stub."""
-        ...
+        ...  # noqa: PIE790
 
     def apply_changes(self) -> None:
         """apply_changes stub."""
-        ...
+        ...  # noqa: PIE790
 
 
 class RulesTarget(RulesSource[ReaderWriterInterface]):
