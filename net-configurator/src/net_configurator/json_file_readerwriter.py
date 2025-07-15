@@ -10,6 +10,7 @@ from net_configurator.json_file_reader import JSONFileReader
 from net_configurator.rule import Owner
 from net_configurator.rule import PacketFilter
 from net_configurator.rule import Rule
+from net_configurator.rules_source import RulesSource
 
 
 class JSONFileReaderWriter(JSONFileReader):
@@ -18,13 +19,15 @@ class JSONFileReaderWriter(JSONFileReader):
     _file_mode: str = 'r+'
 
     def __init__(self, path: str | Path) -> None:
-        """Sets the destination path.
+        """Sets the destination path and load existing rules.
 
         Args:
             path (str | Path): Path of destination file.
         """
         super().__init__(path)
-        self.__rules: set[Rule] = set()
+        rules_source = RulesSource(self)
+        with rules_source:
+            self.__rules = rules_source.read_all_rules()
 
     def add_rule(self, rule: Rule) -> None:
         """Adds rule to file.
