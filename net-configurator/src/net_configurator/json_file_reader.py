@@ -2,6 +2,7 @@
 
 from functools import cached_property
 import json
+import logging
 from pathlib import Path
 from types import TracebackType
 from typing import Any
@@ -59,6 +60,7 @@ class JSONFileReader:
         if not self._file:
             try:
                 self._file = self.__path.open(mode=self._file_mode)
+                logging.getLogger(self.__class__.__name__).debug('File %s opened', str(self.__path))
             except (FileNotFoundError, IsADirectoryError, NotADirectoryError, OSError, PermissionError) as e:
                 msg = f'Cannot open {self.__path!s}'
                 raise FileAccessError(msg) from e
@@ -72,6 +74,7 @@ class JSONFileReader:
         if self._file:
             try:
                 self._file.close()
+                logging.getLogger(self.__class__.__name__).debug('File %s closed', str(self.__path))
             except OSError as e:
                 msg = f'Cannot close {self.__path!s}'
                 raise FileAccessError(msg) from e

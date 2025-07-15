@@ -1,5 +1,6 @@
 """Reader/writer for JSON formatted files."""
 
+import logging
 from pathlib import Path
 
 from pydantic import RootModel
@@ -36,6 +37,7 @@ class JSONFileReaderWriter(JSONFileReader):
             rule (Rule): Rule to add.
         """
         self.__rules.add(rule)
+        logging.getLogger(self.__class__.__name__).debug('Rule %s added', rule.identifier)
 
     def delete_rule(self, rule_identifier: str) -> None:
         """Deletes rule from file.
@@ -43,9 +45,11 @@ class JSONFileReaderWriter(JSONFileReader):
         Args:
             rule_identifier (str): Identifier of rule to delete.
         """
+        logging.getLogger(self.__class__.__name__).debug('Rule %s delete requested', rule_identifier)
         rule_to_delete = next((rule for rule in self.__rules if rule.identifier == rule_identifier), None)
         if rule_to_delete:
             self.__rules.discard(rule_to_delete)
+            logging.getLogger(self.__class__.__name__).debug('Rule %s deleted', rule_to_delete.identifier)
 
     def add_filter(self, packet_filter: PacketFilter) -> None:
         """Adds packet filter to file.
@@ -55,6 +59,7 @@ class JSONFileReaderWriter(JSONFileReader):
         Args:
             packet_filter (PacketFilter): Packet filter to add.
         """
+        logging.getLogger(self.__class__.__name__).debug('Filter %s add requested', packet_filter.identifier)
 
     def delete_filter(self, filter_identifier: str) -> None:
         """Deletes packet filter from file.
@@ -64,6 +69,7 @@ class JSONFileReaderWriter(JSONFileReader):
         Args:
             filter_identifier (str): Identifier of packet filter to delete.
         """
+        logging.getLogger(self.__class__.__name__).debug('Filter %s delete requested', filter_identifier)
 
     def add_owner(self, owner: Owner) -> None:
         """Adds owner to file.
@@ -73,6 +79,7 @@ class JSONFileReaderWriter(JSONFileReader):
         Args:
             owner (Owner): Owner to add.
         """
+        logging.getLogger(self.__class__.__name__).debug('Owner %s add requested', owner.identifier)
 
     def delete_owner(self, owner_identifier: str) -> None:
         """Deletes owner from file.
@@ -82,6 +89,7 @@ class JSONFileReaderWriter(JSONFileReader):
         Args:
             owner_identifier (str): Identifier of owner to delete.
         """
+        logging.getLogger(self.__class__.__name__).debug('Owner %s delete requested', owner_identifier)
 
     def apply_changes(self) -> None:
         """Creates file with applied changes.
@@ -95,6 +103,7 @@ class JSONFileReaderWriter(JSONFileReader):
         if self._file:
             try:
                 self._file.write(rules.model_dump_json(indent=2, exclude_none=True))
+                logging.getLogger(self.__class__.__name__).debug('Changes written to file')
             except OSError as e:
                 msg = 'Cannot write to file'
                 raise FileAccessError(msg) from e
