@@ -13,11 +13,11 @@ from pytest_mock import MockerFixture
 from tenacity import Future
 from tenacity import RetryError
 
+from net_configurator.executor import ExecuteError
 from net_configurator.executor import Executor
 from net_configurator.executor import ExecutorAuthenticationError
 from net_configurator.executor import ExecutorConnectionTimeoutError
 from net_configurator.executor import ExecutorDisconnectTimeoutError
-from net_configurator.executor import ExecuteError
 from net_configurator.executor import NoConnectionError
 
 
@@ -70,7 +70,7 @@ def test_connect_authentication_failure(mocker: MockerFixture, device_config: di
         executor.connect()
 
 
-def test_context_manager(executor: Executor, mock_connection: Mock, mocker: MockerFixture) -> None:
+def test_context_manager(executor: Executor, mock_connection: Mock) -> None:
     """Verify context manager connects and disconnects properly."""
     with executor as ex:
         assert ex is executor
@@ -80,7 +80,7 @@ def test_context_manager(executor: Executor, mock_connection: Mock, mocker: Mock
     assert not executor.is_connected()
 
 
-def test_disconnect_success(executor: Executor, mock_connection: Mock, mocker: MockerFixture) -> None:
+def test_disconnect_success(executor: Executor, mock_connection: Mock) -> None:
     """Verify disconnect closes the connection successfully."""
     executor.connect()
     mock_connection.is_alive.side_effect = [True, False]
@@ -89,12 +89,13 @@ def test_disconnect_success(executor: Executor, mock_connection: Mock, mocker: M
     assert not executor.is_connected()
 
 
-def test_disconnect_success_with_tries(executor: Executor, mock_connection: Mock, mocker: MockerFixture) -> None:
+def test_disconnect_success_with_tries(executor: Executor, mock_connection: Mock) -> None:
     """Verify disconnect succeeds after multiple tries."""
+    retry_count = 3
     executor.connect()
-    mock_connection.is_alive.side_effect = [True, True, True, False]
+    mock_connection.is_alive.side_effect = [True] * retry_count + [False]
     executor.disconnect()
-    assert mock_connection.send_command.call_count == 3
+    assert mock_connection.send_command.call_count == retry_count
     mock_connection.send_command.assert_called_with('exit', expect_string='')
     assert not executor.is_connected()
 
