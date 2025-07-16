@@ -71,14 +71,17 @@ class JSONFileReader:
         Raises:
             FileAccessError: If file cannot be closed.
         """
+        logger = logging.getLogger(self.__class__.__name__)
         if self._file:
             try:
                 self._file.close()
-                logging.getLogger(self.__class__.__name__).debug('File %s closed', str(self.__path))
+                logger.debug('File %s closed', str(self.__path))
             except OSError as e:
                 msg = f'Cannot close {self.__path!s}'
                 raise FileAccessError(msg) from e
             self._file = None
+        else:
+            logger.warning('Close requested on closed file')
 
     @cached_property
     def _file_decoded(self) -> list[Any]:

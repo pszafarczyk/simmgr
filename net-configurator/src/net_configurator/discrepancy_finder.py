@@ -1,14 +1,21 @@
 """RuleDiscrepancyFinder finds differences between two rule sets."""
 
 import logging
+from typing import Generic
+from typing import TypeVar
 
 from net_configurator.rule import IdentifiedModelInterface
+from net_configurator.rule import Owner
+from net_configurator.rule import PacketFilter
+from net_configurator.rule import Rule
+
+T = TypeVar('T', bound=IdentifiedModelInterface)
 
 
-class BaseDiscrepancyFinder:
+class BaseDiscrepancyFinder(Generic[T]):
     """Finds differences between two sets."""
 
-    def __init__(self, desired_elements: set[IdentifiedModelInterface], existing_elements: set[IdentifiedModelInterface]) -> None:
+    def __init__(self, desired_elements: set[T], existing_elements: set[T]) -> None:
         """Inits BaseDiscrepancyFinder with element sets."""
         self.__desired_elements = desired_elements
         self.__existing_elements = existing_elements
@@ -20,7 +27,7 @@ class BaseDiscrepancyFinder:
         logging.getLogger(self.__class__.__name__).debug('%d elements should be deleted %s', len(to_delete), ','.join(to_delete))
         return to_delete
 
-    def get_elements_to_add(self) -> set[IdentifiedModelInterface]:
+    def get_elements_to_add(self) -> set[T]:
         """Returns set of elements that should be added."""
         to_add = self.__desired_elements.difference(self.__existing_elements)
         to_add_identifiers = [element.identifier for element in to_add]
@@ -28,13 +35,13 @@ class BaseDiscrepancyFinder:
         return to_add
 
 
-class RuleDiscrepancyFinder(BaseDiscrepancyFinder):
+class RuleDiscrepancyFinder(BaseDiscrepancyFinder[Rule]):
     """Finds differences between two rule sets."""
 
 
-class FilterDiscrepancyFinder(BaseDiscrepancyFinder):
+class FilterDiscrepancyFinder(BaseDiscrepancyFinder[PacketFilter]):
     """Finds differences between two filter sets."""
 
 
-class OwnerDiscrepancyFinder(BaseDiscrepancyFinder):
+class OwnerDiscrepancyFinder(BaseDiscrepancyFinder[Owner]):
     """Finds differences between two owner sets."""
