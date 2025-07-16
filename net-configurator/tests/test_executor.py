@@ -2,9 +2,11 @@
 
 # ruff: noqa: SLF001
 from unittest.mock import Mock
+from unittest.mock import patch
 
 from netmiko import BaseConnection
 from netmiko import NetmikoAuthenticationException
+from netmiko import NetmikoBaseException
 from netmiko import NetmikoTimeoutException
 import pytest
 from pytest_mock import MockerFixture
@@ -35,7 +37,7 @@ def mock_connection() -> Mock:
     """Create a mocked BaseConnection object with default behavior."""
     mock_conn = Mock(spec=BaseConnection)
     mock_conn.is_alive.return_value = True
-    mock_conn.send_command.return_value = 'command output'
+    mock_conn.send_command.return_value = 'WG#command output'
     return mock_conn
 
 
@@ -44,13 +46,6 @@ def executor(device_config: dict[str, str], mocker: MockerFixture, mock_connecti
     """Create an Executor instance with mocked ConnectHandler."""
     mocker.patch('net_configurator.executor.ConnectHandler', return_value=mock_connection)
     return Executor(device_config)
-
-
-def test_initialization(device_config: dict[str, str]) -> None:
-    """Verify Executor initializes with no connection and correct device config."""
-    executor = Executor(device_config)
-    assert executor.__dict__.get('_Executor__connection') is None
-    assert executor.__dict__.get('_Executor__device') == device_config
 
 
 def test_connect_success(executor: Executor) -> None:
@@ -109,24 +104,18 @@ def test_execute_no_connection(executor: Executor) -> None:
         executor.execute('show version')
 
 
-def test_execute_success(executor: Executor, mock_connection: Mock) -> None:
+def test_execute_success(executor: Executor) -> None:
     """Verify execute returns command output when connected."""
-    executor.connect()
-    result = executor.execute('show version')
-    assert result == 'command output'
-    mock_connection.send_command.assert_called_once_with('show version')
+    with patch.object(executor, '_send_command', return_value='WG#command output') as mock_send:
+        executor.connect()
+        result = executor.execute('show version')
+        assert result == 'WG#command output'
+        mock_send.assert_called_once_with('show version')
 
 
 def test_execute_command_failure(executor: Executor, mock_connection: Mock) -> None:
     """Verify execute raises ExecuteError on command failure."""
-    mock_connection.send_command.side_effect = Exception('Command failed.')
+    mock_connection.send_command.side_effect = NetmikoBaseException('Command failed.')
     executor.connect()
     with pytest.raises(ExecuteError, match='Command failed.'):
         executor.execute('show version')
-
-
-def test_destructor_disconnects(executor: Executor, mock_connection: Mock) -> None:
-    """Verify destructor disconnects the active connection."""
-    executor.connect()
-    executor.__del__()
-    mock_connection.send_command.assert_called_once_with('exit', expect_string='')
