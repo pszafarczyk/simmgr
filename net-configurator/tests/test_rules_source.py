@@ -9,6 +9,7 @@ from unittest.mock import Mock
 import pytest
 
 from net_configurator.json_file_reader import JSONFileReader
+from net_configurator.json_file_reader import NotJSONArrayError
 from net_configurator.rule import Rule
 from net_configurator.rules_source import ReaderInterface
 from net_configurator.rules_source import RulesSource
@@ -29,7 +30,7 @@ def test_json_file_reader_without_array_raises(monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setattr(Path, 'open', lambda path, mode: StringIO())  # noqa: ARG005
     monkeypatch.setattr(json, 'load', lambda file: {'a': 1})  # noqa: ARG005
     reader = JSONFileReader('file.json')
-    with pytest.raises(TypeError, match='File content is not an array'), reader:
+    with pytest.raises(NotJSONArrayError, match='File content is not an array'), reader:
         reader.read_all_rules()
 
 

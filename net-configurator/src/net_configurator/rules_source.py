@@ -8,12 +8,13 @@ from typing import TypeVar
 
 from pydantic import ValidationError
 
+from net_configurator.base_exceptions import FatalError
 from net_configurator.rule import Owner
 from net_configurator.rule import PacketFilter
 from net_configurator.rule import Rule
 
 
-class DeserializationError(Exception):
+class DeserializationError(FatalError):
     """Exception raised when external data cannot be deserialized."""
 
 

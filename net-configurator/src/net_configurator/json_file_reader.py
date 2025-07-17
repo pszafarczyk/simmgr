@@ -8,16 +8,18 @@ from types import TracebackType
 from typing import Any
 from typing import IO
 
+from net_configurator.base_exceptions import FatalError
 
-class FileAccessError(Exception):
+
+class FileAccessError(FatalError):
     """Exception raised in case of problems accessing file."""
 
 
-class FileNotOpenedError(RuntimeError):
+class FileNotOpenedError(FatalError):
     """Exception raised when reading from closed file."""
 
 
-class NotJSONArrayError(TypeError):
+class NotJSONArrayError(FatalError):
     """Exception raised when top-level file element is not array."""
 
 
