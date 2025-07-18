@@ -10,8 +10,8 @@ from netmiko import NetmikoBaseException
 from netmiko import NetmikoTimeoutException
 from tenacity import retry
 from tenacity import RetryError
-from tenacity import stop_after_delay
-from tenacity import wait_fixed
+from tenacity import stop_after_attempt
+from tenacity import wait_exponential
 
 
 class ExecutorBaseError(Exception):
@@ -33,7 +33,7 @@ class ExecutorSocketError(ExecutorBaseError):
 class ExecutorDisconnectTimeoutError(ExecutorBaseError):
     """Raised when disconnection attempt times out."""
 
-    def __init__(self, message: str = 'Failed to disconnect within timeout period', retries: int = 20):
+    def __init__(self, message: str = 'Failed to disconnect within timeout period', retries: int = 10):
         """Initialize the exception with a message and retry count.
 
         Args:
@@ -121,7 +121,7 @@ class Executor:
             try:
                 self._try_disconnect()
             except RetryError as err:
-                raise ExecutorDisconnectTimeoutError(retries=20) from err
+                raise ExecutorDisconnectTimeoutError(retries=10) from err
             self.__connection = None
 
     def _send_command(self, command: str, expect_output: str = '.*WG[a-zA-Z()/]*#$') -> str:
@@ -147,7 +147,7 @@ class Executor:
         """Check if there is connection."""
         return isinstance(self.__connection, BaseConnection) and self.__connection.is_alive()
 
-    @retry(stop=stop_after_delay(10), wait=wait_fixed(0.5))
+    @retry(stop=stop_after_attempt(10), wait=wait_exponential(multiplier=0.5, min=0.5, max=3))
     def _try_disconnect(self) -> None:
         """Retry until connection is inactive.
 
@@ -155,10 +155,10 @@ class Executor:
             ExecutorDisconnectTimeoutError: If connection remains active
                 after retry period.
         """
-        disconnect_error_msg = 'Connection still active after exit command'
         self._send_command('exit', expect_output='')
         if self.is_connected():
-            raise ExecutorDisconnectTimeoutError(disconnect_error_msg)
+            msg = 'Connection still active after exit command'
+            raise ExecutorDisconnectTimeoutError(msg)
 
     def execute(self, command: str) -> str:
         """Execute command and return output as str.
