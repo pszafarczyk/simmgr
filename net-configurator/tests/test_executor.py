@@ -103,13 +103,20 @@ def test_connect_authentication_failure(mocker: MockerFixture, device_config: di
         executor.connect()
 
 
-def test_context_manager(executor: Executor, mock_connection: Mock) -> None:
+def test_context_manager_enter(executor: Executor, mock_connection: Mock) -> None:
     """Verify context manager connects and disconnects properly."""
     with executor as ex:
         assert ex is executor
         assert executor.is_connected()
         mock_connection.is_alive.side_effect = [True, False]
-    mock_connection.send_command.assert_called_once_with('exit', expect_string='')
+
+
+def test_context_manager_exit(executor: Executor, coordinated_mocks: Callable[..., tuple[MagicMock, MagicMock]]) -> None:
+    """Verify context manager connects and disconnects properly."""
+    send_command_mock, is_connected_mock = coordinated_mocks(initially_connected=True, disconnect_after_n_exit_calls=1)
+    with patch.object(executor, '_send_command', send_command_mock), patch.object(executor, 'is_connected', is_connected_mock), executor:
+        pass
+    send_command_mock.assert_called_with('exit', expect_output='')
     assert not executor.is_connected()
 
 
@@ -120,7 +127,7 @@ def test_disconnect_success(executor: Executor, coordinated_mocks: Callable[...,
         executor._try_disconnect()
 
     send_command_mock.assert_called_with('exit', expect_output='')
-    is_connected_mock.assert_called()
+    assert not executor.is_connected()
 
 
 def test_disconnect_success_with_tries(executor: Executor, coordinated_mocks: Callable[..., tuple[MagicMock, MagicMock]]) -> None:
@@ -135,7 +142,6 @@ def test_disconnect_success_with_tries(executor: Executor, coordinated_mocks: Ca
         executor.disconnect()
 
     send_command_mock.assert_called_with('exit', expect_output='')
-    is_connected_mock.assert_called()
     assert not executor.is_connected()
 
 

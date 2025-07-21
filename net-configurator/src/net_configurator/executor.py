@@ -11,7 +11,7 @@ from netmiko import NetmikoTimeoutException
 from tenacity import retry
 from tenacity import RetryError
 from tenacity import stop_after_attempt
-from tenacity import wait_exponential
+from tenacity import wait_fixed
 
 
 class ExecutorBaseError(Exception):
@@ -121,7 +121,7 @@ class Executor:
             try:
                 self._try_disconnect()
             except RetryError as err:
-                raise ExecutorDisconnectTimeoutError(retries=10) from err
+                raise ExecutorDisconnectTimeoutError(retries=20) from err
             self.__connection = None
 
     def _send_command(self, command: str, expect_output: str = '.*WG[a-zA-Z()/]*#$') -> str:
@@ -147,7 +147,7 @@ class Executor:
         """Check if there is connection."""
         return isinstance(self.__connection, BaseConnection) and self.__connection.is_alive()
 
-    @retry(stop=stop_after_attempt(10), wait=wait_exponential(multiplier=0.5, min=0.5, max=3))
+    @retry(stop=stop_after_attempt(10), wait=wait_fixed(0.5))
     def _try_disconnect(self) -> None:
         """Retry until connection is inactive.
 
@@ -155,10 +155,11 @@ class Executor:
             ExecutorDisconnectTimeoutError: If connection remains active
                 after retry period.
         """
-        self._send_command('exit', expect_output='')
         if self.is_connected():
-            msg = 'Connection still active after exit command'
-            raise ExecutorDisconnectTimeoutError(msg)
+            self._send_command('exit', expect_output='')
+            if self.is_connected():
+                msg = 'Connection still active after exit command'
+                raise ExecutorDisconnectTimeoutError(msg)
 
     def execute(self, command: str) -> str:
         """Execute command and return output as str.
