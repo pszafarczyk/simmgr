@@ -1,6 +1,8 @@
 """Tests for Executor class."""
 
 # ruff: noqa: SLF001
+from collections.abc import Callable
+from unittest.mock import MagicMock
 from unittest.mock import Mock
 from unittest.mock import patch
 
@@ -10,8 +12,6 @@ from netmiko import NetmikoBaseException
 from netmiko import NetmikoTimeoutException
 import pytest
 from pytest_mock import MockerFixture
-from tenacity import Future
-from tenacity import RetryError
 
 from net_configurator.executor import ExecuteError
 from net_configurator.executor import Executor
@@ -47,23 +47,29 @@ def executor(device_config: dict[str, str], mocker: MockerFixture, mock_connecti
     mocker.patch('net_configurator.executor.ConnectHandler', return_value=mock_connection)
     return Executor(device_config)
 
+
 @pytest.fixture
-def coordinated_mocks(mocker):
-    def create_mocks(initially_connected=True, disconnect_after_n_exit_calls=None):
+def coordinated_mocks(mocker: MockerFixture) -> Callable[..., tuple[MagicMock, MagicMock]]:  # noqa: C901
+    """Factory to create mocks for `_send_command` and `is_connected`."""
+
+    def create_mocks(initially_connected: bool = True, disconnect_after_n_exit_calls: int | None = None) -> tuple[MagicMock, MagicMock]:
+        """Create coordinated mocks for _send_command and is_connected.
+
+        Args:
+            initially_connected: Initial return value of is_connected.
+            disconnect_after_n_exit_calls: Number of 'exit' command calls after which
+                                        is_connected returns False.
+                                        If None, is_connected never returns False.
+        Returns: Tuple of (send_command_mock, is_connected_mock)
         """
-        Create coordinated mocks for _send_command and is_connected.
-        - initially_connected: Initial return value of is_connected (True if connected).
-        - disconnect_after_n_exit_calls: Number of 'exit' command calls after which is_connected returns False.
-                                         If None, is_connected never returns False.
-        Returns: (send_command_mock, is_connected_mock)
-        """
-        exit_call_count = 0
-        def send_command(command, expect_output):
+        exit_call_count: int = 0
+
+        def send_command(command: str, expect_output: str) -> None:
             nonlocal exit_call_count
             if command == 'exit' and expect_output == '':
                 exit_call_count += 1
 
-        def is_connected():
+        def is_connected() -> bool:
             if disconnect_after_n_exit_calls is not None and exit_call_count >= disconnect_after_n_exit_calls:
                 return False
             return initially_connected
@@ -73,6 +79,7 @@ def coordinated_mocks(mocker):
         return send_command_mock, is_connected_mock
 
     return create_mocks
+
 
 def test_connect_success(executor: Executor) -> None:
     """Verify connect establishes a connection successfully."""
@@ -105,43 +112,47 @@ def test_context_manager(executor: Executor, mock_connection: Mock) -> None:
     mock_connection.send_command.assert_called_once_with('exit', expect_string='')
     assert not executor.is_connected()
 
-def test_disconnect_success(executor: Executor, coordinated_mocks: callable) -> None:
+
+def test_disconnect_success(executor: Executor, coordinated_mocks: Callable[..., tuple[MagicMock, MagicMock]]) -> None:
     """Verify disconnect closes the connection successfully."""
     send_command_mock, is_connected_mock = coordinated_mocks(initially_connected=True, disconnect_after_n_exit_calls=1)
-    executor._send_command = send_command_mock
-    executor.is_connected = is_connected_mock
-
-    executor._try_disconnect()
+    with patch.object(executor, '_send_command', send_command_mock), patch.object(executor, 'is_connected', is_connected_mock):
+        executor._try_disconnect()
 
     send_command_mock.assert_called_with('exit', expect_output='')
     is_connected_mock.assert_called()
 
-def test_disconnect_success_with_tries(executor: Executor, coordinated_mocks: callable) -> None:
+
+def test_disconnect_success_with_tries(executor: Executor, coordinated_mocks: Callable[..., tuple[MagicMock, MagicMock]]) -> None:
     """Verify disconnect succeeds after multiple tries."""
     send_command_mock, is_connected_mock = coordinated_mocks(initially_connected=True, disconnect_after_n_exit_calls=3)
-    executor._send_command = send_command_mock
-    executor.is_connected = is_connected_mock
 
-    executor._try_disconnect.retry.sleep = Mock()
-    executor.disconnect()
+    with (
+        patch.object(executor, '_send_command', send_command_mock),
+        patch.object(executor, 'is_connected', is_connected_mock),
+        patch.object(executor._try_disconnect.retry, 'sleep', Mock()),  # type: ignore[attr-defined]
+    ):
+        executor.disconnect()
 
     send_command_mock.assert_called_with('exit', expect_output='')
     is_connected_mock.assert_called()
     assert not executor.is_connected()
 
 
-def test_disconnect_timeout(executor: Executor, mocker: MockerFixture, coordinated_mocks: callable) -> None:
+def test_disconnect_timeout(executor: Executor, coordinated_mocks: Callable[..., tuple[MagicMock, MagicMock]]) -> None:
     """Verify disconnect raises ExecutorDisconnectTimeoutError on timeout."""
     send_command_mock, is_connected_mock = coordinated_mocks(initially_connected=True, disconnect_after_n_exit_calls=None)
-    executor._send_command = send_command_mock
-    executor.is_connected = is_connected_mock
-    
-    executor._try_disconnect.retry.sleep = Mock()
-    with pytest.raises(ExecutorDisconnectTimeoutError, match='Failed to disconnect within timeout period'):
+    with (
+        patch.object(executor, '_send_command', send_command_mock),
+        patch.object(executor, 'is_connected', is_connected_mock),
+        patch.object(executor._try_disconnect.retry, 'sleep', Mock()),  # type: ignore[attr-defined]
+        pytest.raises(ExecutorDisconnectTimeoutError, match='Failed to disconnect within timeout period'),
+    ):
         executor.disconnect()
 
     send_command_mock.assert_called_with('exit', expect_output='')
     is_connected_mock.assert_called()
+
 
 def test_execute_no_connection(executor: Executor) -> None:
     """Verify execute raises NoConnectionError when not connected."""
