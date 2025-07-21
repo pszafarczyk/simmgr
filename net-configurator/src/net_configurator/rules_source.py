@@ -50,6 +50,14 @@ class ReaderInterface(Protocol):
         ...
 
 
+class ReaderFactoryInterface(Protocol):
+    """Interface of factory creating Reader."""
+
+    def create(self) -> ReaderInterface:
+        """Create Reader."""
+        ...
+
+
 T = TypeVar('T', bound=ReaderInterface)
 
 

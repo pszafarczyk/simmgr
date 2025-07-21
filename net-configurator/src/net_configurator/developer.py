@@ -6,9 +6,9 @@ from net_configurator.discrepancy_finder import FilterDiscrepancyFinder
 from net_configurator.discrepancy_finder import OwnerDiscrepancyFinder
 from net_configurator.discrepancy_finder import RuleDiscrepancyFinder
 from net_configurator.optimizer import Optimizer
-from net_configurator.rules_source import ReaderInterface
+from net_configurator.rules_source import ReaderFactoryInterface
 from net_configurator.rules_source import RulesSource
-from net_configurator.rules_target import ReaderWriterInterface
+from net_configurator.rules_target import ReaderWriterFactoryInterface
 from net_configurator.rules_target import RulesTarget
 
 
@@ -21,10 +21,20 @@ class Developer:
     match the desired state, and applies the changes to the target.
     """
 
-    def __init__(self, source_handler: ReaderInterface, target_handler: ReaderWriterInterface) -> None:
-        """Inits Developer with source and target interfaces."""
-        self.__source = RulesSource(source_handler)
-        self.__target = RulesTarget(target_handler)
+    def __init__(self, source_factory: ReaderFactoryInterface, target_factory: ReaderWriterFactoryInterface) -> None:
+        """Inits Developer with source and target interface factories."""
+        self.__source_factory = source_factory
+        self.__target_factory = target_factory
+        self.__recreate_source()
+        self.__recreate_target()
+
+    def __recreate_source(self) -> None:
+        """(Re)creates rules source."""
+        self.__source = RulesSource(self.__source_factory.create())
+
+    def __recreate_target(self) -> None:
+        """(Re)creates rules target."""
+        self.__target = RulesTarget(self.__target_factory.create())
 
     def process(self) -> None:  # noqa: C901
         """Changes target to match source."""

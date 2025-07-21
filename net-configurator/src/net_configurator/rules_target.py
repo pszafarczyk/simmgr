@@ -1,5 +1,7 @@
 """RuleTarget represents destination for rules."""
 
+from typing import Protocol
+
 from net_configurator.rule import Owner
 from net_configurator.rule import PacketFilter
 from net_configurator.rule import Rule
@@ -37,6 +39,14 @@ class ReaderWriterInterface(ReaderInterface):
     def apply_changes(self) -> None:
         """apply_changes stub."""
         ...  # noqa: PIE790
+
+
+class ReaderWriterFactoryInterface(Protocol):
+    """Interface of factory creating ReaderWriter."""
+
+    def create(self) -> ReaderWriterInterface:
+        """Create ReaderWriter."""
+        ...
 
 
 class RulesTarget(RulesSource[ReaderWriterInterface]):

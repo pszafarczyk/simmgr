@@ -110,3 +110,23 @@ class JSONFileReaderWriter(JSONFileReader):
         else:
             msg = 'File not opened before writing'
             raise FileNotOpenedError(msg)
+
+
+class JSONFileReaderWriterFactory:
+    """Factory creating JSONFileReaderWriter."""
+
+    def __init__(self, path: str | Path) -> None:
+        """Sets the source path.
+
+        Args:
+            path (str | Path): Path of target file.
+        """
+        self.__path = Path(path)
+
+    def create(self) -> JSONFileReaderWriter:
+        """Creates JSONFileReaderWriter.
+
+        Returns:
+            JSONFileReaderWriter: New JSONFileReaderWriter.
+        """
+        return JSONFileReaderWriter(self.__path)

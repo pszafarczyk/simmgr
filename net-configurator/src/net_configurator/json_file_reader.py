@@ -145,3 +145,23 @@ class JSONFileReader:
         """
         owner_lists = [rule['owners'] for rule in self._file_decoded if isinstance(rule, dict) and 'owners' in rule]
         return [owner for owner_list in owner_lists for owner in owner_list]
+
+
+class JSONFileReaderFactory:
+    """Factory creating JSONFileReader."""
+
+    def __init__(self, path: str | Path) -> None:
+        """Sets the source path.
+
+        Args:
+            path (str | Path): Path of source file.
+        """
+        self.__path = Path(path)
+
+    def create(self) -> JSONFileReader:
+        """Creates JSONFileReader.
+
+        Returns:
+            JSONFileReader: New JSONFileReader.
+        """
+        return JSONFileReader(self.__path)
