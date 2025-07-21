@@ -33,6 +33,28 @@ class WatchguardParser:
     """RuleManager class for managing WatchGuard Firebox firewall rules."""
 
     @staticmethod
+    def extract_owner_names(data: str) -> list[str]:
+        """Extract all unique rule IDs."""
+        #!!!!!!!!!!!!!!!!!!!!!!!!
+        matches = []
+        for line in data.splitlines():
+            match = pattern.search(line)
+            if match:
+                matches.append(match.group(0))
+        return matches
+    
+    @staticmethod
+    def extract_filter_names(data: str) -> list[str]:
+        """Extract all unique rule IDs."""
+        pattern = re.compile(r'X-[a-f0-9]{40}')
+        matches = []
+        for line in data.splitlines():
+            match = pattern.search(line)
+            if match:
+                matches.append(match.group(0))
+        return matches
+    
+    @staticmethod
     def extract_rule_names(data: str) -> list[str]:
         """Extract all unique rule IDs."""
         pattern = re.compile(r'X-[a-f0-9]{40}')

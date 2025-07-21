@@ -86,6 +86,19 @@ class WatchguardCommandGenerator:
             self.commands.extend([f'policy-tag {owner} color 0xc0c0c0' for owner in owners])
 
     @staticmethod
+    def delete_owner(name: str):
+        """Generate commands to add a owner tags.
+
+        Args:
+            owners (tuple[str, ...]): List-like touple of owner tags.
+        
+        Returns:
+            list[str]: A list of generated commands.
+        """
+        with self.enter_config_context(), self.command_helper.policy(commands):
+            self.commands.extend(f'no policy-tag {owner}')
+
+    @staticmethod
     def add_filter(rule_filter: RuleFilter) -> list[str]:
         """Generate commands to add a filter.
 
