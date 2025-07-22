@@ -1,33 +1,41 @@
 """Module for parsing WatchGuard Firebox firewall rules into structured data."""
 
-import re
-from typing import Union, Optional
 from dataclasses import dataclass
+from dataclasses import field
+import re
+
 from dataclasses_json import dataclass_json
+
 
 @dataclass_json
 @dataclass
 class Network:
     """Represents a network range or single IP/CIDR."""
+
     ip_low: str
     ip_high: str
+
 
 @dataclass_json
 @dataclass
 class RuleAttributes:
     """Represents the attributes of a firewall rule."""
-    sources: list[Network]
-    destinations: list[Network]
-    filter_name: str
-    owners: list[str]
+
+    sources: list[Network] = field(default_factory=list)
+    destinations: list[Network] = field(default_factory=list)
+    filter_name: str = ''
+    owners: list[str] = field(default_factory=list)
+
 
 @dataclass_json
 @dataclass
 class Filter:
     """Represents a filter with protocol and port information."""
+
     protocol: str
     port_low: str
     port_high: str
+
 
 class WatchguardParser:
     """RuleManager class for managing WatchGuard Firebox firewall rules."""
@@ -35,14 +43,10 @@ class WatchguardParser:
     @staticmethod
     def extract_owner_names(data: str) -> list[str]:
         """Extract all unique rule IDs."""
-        #!!!!!!!!!!!!!!!!!!!!!!!!
-        matches = []
-        for line in data.splitlines():
-            match = pattern.search(line)
-            if match:
-                matches.append(match.group(0))
-        return matches
-    
+        if data:
+            pass
+        return ['']
+
     @staticmethod
     def extract_filter_names(data: str) -> list[str]:
         """Extract all unique rule IDs."""
@@ -53,7 +57,7 @@ class WatchguardParser:
             if match:
                 matches.append(match.group(0))
         return matches
-    
+
     @staticmethod
     def extract_rule_names(data: str) -> list[str]:
         """Extract all unique rule IDs."""
@@ -66,7 +70,7 @@ class WatchguardParser:
         return matches
 
     @staticmethod
-    def parse_network(network_text: str) -> Network:
+    def _parse_network(network_text: str) -> Network:
         """Parse network."""
         network_text = network_text.strip()
         ip_low = ip_high = ''
@@ -80,20 +84,19 @@ class WatchguardParser:
             ip_low = network_text
 
         return Network(ip_low=ip_low, ip_high=ip_high)
-    
+
     @staticmethod
-    def parse_rule(rule_text: str) -> RuleAttributes: 
+    def parse_rule(rule_text: str) -> RuleAttributes:
         """Parse a rule text into a structured dictionary of attributes.
 
         Args:
             rule_text (str): The input rule text to parse.
         """
-
-        cleaned_lines = WatchguardParser.clean_rule_lines(rule_text)
-        return WatchguardParser.extract_attributes(cleaned_lines)
+        cleaned_lines = WatchguardParser._clean_rule_lines(rule_text)
+        return WatchguardParser._extract_attributes(cleaned_lines)
 
     @staticmethod
-    def clean_rule_lines(rule_text: str) -> list[list[str]]:
+    def _clean_rule_lines(rule_text: str) -> list[list[str]]:
         """Split rule text into lines and clean them.
 
         Args:
@@ -109,59 +112,59 @@ class WatchguardParser:
         return [line for line in cleaned_lines if len(line) >= min_line_length]
 
     @staticmethod
-    def _from_handler(key: str, value: str) -> list[list[str]]:
-        """Filter out lines that are too short to process."""
-    
-    @staticmethod
-    def _parse_rule_line(line: list[str], attributes: dict[str, Union[list[Network], list[str], str]],prev_key: str) -> str:
+    def _parse_rule_line(line: list[str], attributes: RuleAttributes, prev_key: str) -> str:  # noqa: C901
         """Parse rule line."""
         key, value = line[0], line[1]
+        new_key = ''
+        match key:
+            case 'from alias list':
+                attributes.sources.append(WatchguardParser._parse_network(value))
+                new_key = 'from alias list'
 
-        if key == 'from alias list':
-            attributes['sources'].append(WatchguardParser.parse_network(value))
-            return 'from alias list'
+            case '':
+                if prev_key == 'from alias list':
+                    attributes.sources.append(WatchguardParser._parse_network(value))
+                    new_key = prev_key
 
-        elif key == '' and prev_key == 'from alias list':
-            attributes['sources'].append(WatchguardParser.parse_network(value))
-            return prev_key
-        
-        if key == 'to alias list':
-            attributes['destinations'].append(WatchguardParser.parse_network(value))
-            return 'to alias list'
+                if prev_key == 'to alias list':
+                    attributes.destinations.append(WatchguardParser._parse_network(value))
+                    new_key = prev_key
 
-        elif key == '' and prev_key == 'to alias list':
-            attributes['destinations'].append(WatchguardParser.parse_network(value))
-            return prev_key
-        
-        if key == 'service':
-            attributes['filter_name'] = value
-            return 'service'
+            case 'to alias list':
+                attributes.destinations.append(WatchguardParser._parse_network(value))
+                new_key = 'to alias list'
 
-        if key == 'Tags':
-            attributes['owners'] = [tag.strip() for tag in value.split(',')]
-            return 'Tags'
+            case 'service':
+                attributes.filter_name = value
+                new_key = 'service'
+
+            case 'Tags':
+                attributes.owners = [tag.strip() for tag in value.split(',')]
+                new_key = 'Tags'
+
+        return new_key
 
     @staticmethod
-    def extract_attributes(cleaned_lines: list[list[str]]) -> RuleAttributes:
+    def _extract_attributes(cleaned_lines: list[list[str]]) -> RuleAttributes:
         """Extract rule attributes from cleaned lines into a structured dictionary.
 
         Args:
             cleaned_lines (list[list[str]]): list of cleaned line parts.
         """
-        attributes = {'sources': [], 'destinations': [], 'filter_name': '', 'owners': []}
+        attributes = RuleAttributes()
         prev_key = ''
         for line in WatchguardParser._valid_lines(cleaned_lines):
             prev_key = WatchguardParser._parse_rule_line(line, attributes, prev_key)
         return attributes
 
     @staticmethod
-    def _match_range(line: str) -> Optional[re.Match[str]]:
+    def _match_range(line: str) -> re.Match[str] | None:
         """Match range."""
         pattern = re.compile(r'\(\d+\): service-range/protocol\((\w+)\):start-port\((\d+)\) end-port\((\d+)\)')
         return pattern.match(line)
 
     @staticmethod
-    def _match_single(line: str) -> Optional[re.Match[str]]:
+    def _match_single(line: str) -> re.Match[str] | None:
         """Match single."""
         pattern = re.compile(r'\(\d+\): service-single/protocol\((\w+)\):(.+)')
         return pattern.match(line)
@@ -169,11 +172,7 @@ class WatchguardParser:
     @staticmethod
     def _extract_range(match: re.Match[str]) -> Filter:
         """Extract range."""
-        return Filter(
-            protocol = match.group(1),
-            port_low = match.group(2),
-            port_high = match.group(3)
-        )
+        return Filter(protocol=match.group(1), port_low=match.group(2), port_high=match.group(3))
 
     @staticmethod
     def _extract_single(match: re.Match[str]) -> Filter:
@@ -191,7 +190,7 @@ class WatchguardParser:
         return Filter(protocol=protocol, port_low=port_low, port_high=port_high)
 
     @staticmethod
-    def _parse_filter_line(line: str) -> Optional[Filter]:
+    def _parse_filter_line(line: str) -> Filter | None:
         """Parse filter line."""
         line = line.strip()
         if not line.startswith('('):
