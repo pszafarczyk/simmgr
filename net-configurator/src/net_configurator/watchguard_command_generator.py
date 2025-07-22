@@ -5,6 +5,7 @@ from contextlib import contextmanager
 
 from net_configurator.rule import NetworkPeer
 from net_configurator.rule import NetworkService
+from net_configurator.rule import Owner
 from net_configurator.rule import PacketFilter
 from net_configurator.rule import Rule
 
@@ -12,7 +13,7 @@ from net_configurator.rule import Rule
 class WatchguardCommandGenerator:
     """WatchGuard-specific command generator."""
 
-    def __init__(self, commands: Optional[list[str]] = None) -> None:
+    def __init__(self, commands: list[str] | None = None) -> None:
         """Placeholder."""
         self.commands = commands if commands is not None else []
         self.command_helper = WatchguardCommandGeneratorHelper()
@@ -27,7 +28,7 @@ class WatchguardCommandGenerator:
             list[str]: A list of generated commands.
         """
         with self.enter_config_context(), self.enter_policy_context(), self.enter_rule_context(rule.identifier):
-            self.commands.append(f'policy-type {rule.filter.identifier} {self.command_helper.build_from(rule)} {self.command_helper.build_to(rule)}')
+            self.commands.append(f'policy-type {rule.packet_filter.identifier} {self.command_helper.build_from(rule)} {self.command_helper.build_to(rule)}')
             self.commands.append(f'policy-tag {self.command_helper.build_owners(rule.owners)}')
             self.commands.append('apply')
 
@@ -80,19 +81,21 @@ class WatchguardCommandGenerator:
             list[str]: A list of generated commands.
         """
         with self.enter_config_context(), self.enter_policy_context():
-            self.commands.append([f'policy-tag {owner} color 0xc0c0c0' for owner in owners])
+            policy_tag_commands = [f'policy-tag {owner} color 0xc0c0c0' for owner in owners]
+            self.commands.extend(policy_tag_commands)
 
-    def add_filter(self, rule_filter: PacketFilter) -> None:
+    def add_filter(self, packet_filter: PacketFilter) -> None:
         """Generate commands to add a filter.
 
         Args:
-            rule_filter (PacketFilter): The filter to be added.
+            packet_filter (PacketFilter): The filter to be added.
 
         Returns:
             list[str]: A list of generated commands.
         """
         with self.enter_config_context(), self.enter_policy_context():
-            self.commands.append([f'policy-type {rule_filter.identifier} {self.command_helper.build_service(service)}' for service in rule_filter.root])
+            policy_type_commands = [f'policy-type {packet_filter.identifier} {self.command_helper.build_service(service)}' for service in packet_filter.root]
+            self.commands.extend(policy_type_commands)
             self.commands.append('apply')
 
     def delete_filter(self, name: str) -> None:
@@ -126,7 +129,7 @@ class WatchguardCommandGenerator:
         """
         self.commands.append(f'show policy-type {name}')
 
-    def get_commands(self) -> None:
+    def get_commands(self) -> list[str]:
         """Placeholder."""
         return self.commands
 
@@ -180,7 +183,8 @@ class WatchguardCommandGenerator:
 class WatchguardCommandGeneratorHelper:
     """Placeholder."""
 
-    def build_network(self, networks: tuple[NetworkPeer, ...]) -> str:
+    @staticmethod
+    def build_network(networks: tuple[NetworkPeer, ...]) -> str:
         """Build network string from a list of NetworkPeer objects.
 
         Args:
@@ -199,7 +203,8 @@ class WatchguardCommandGeneratorHelper:
                 parts.append(f'network-ip {network.ip_low}')
         return ' '.join(parts)
 
-    def build_service(self, service: NetworkService) -> str:
+    @staticmethod
+    def build_service(service: NetworkService) -> str:
         """Build service string from a NetworkService object.
 
         Args:
@@ -217,7 +222,8 @@ class WatchguardCommandGeneratorHelper:
             parts.append(f'port-range {service.port_low} {service.port_high}')
         return ' '.join(parts)
 
-    def build_from(self, rule: Rule) -> str:
+    @staticmethod
+    def build_from(rule: Rule) -> str:
         """Build the 'from' part of a rule command.
 
         Args:
@@ -226,9 +232,10 @@ class WatchguardCommandGeneratorHelper:
         Returns:
             str: A command-ready source string.
         """
-        return f'from {CommandBuilder.build_network(rule.sources)}'
+        return f'from {WatchguardCommandGeneratorHelper.build_network(rule.sources)}'
 
-    def build_to(self, rule: Rule) -> str:
+    @staticmethod
+    def build_to(rule: Rule) -> str:
         """Build the 'to' part of a rule command.
 
         Args:
@@ -237,9 +244,10 @@ class WatchguardCommandGeneratorHelper:
         Returns:
             str: A command-ready destination string.
         """
-        return f'to {CommandBuilder.build_network(rule.destinations)}'
+        return f'to {WatchguardCommandGeneratorHelper.build_network(rule.destinations)}'
 
-    def build_owners(self, owners: tuple[str, ...]) -> str:
+    @staticmethod
+    def build_owners(owners: tuple[Owner, ...]) -> str:
         """Build the owners part of a rule command.
 
         Args:
@@ -248,4 +256,5 @@ class WatchguardCommandGeneratorHelper:
         Returns:
             str: A string with owner tags.
         """
-        return ' '.join(owners)
+        owners_identifiers = [owner.identifier for owner in owners]
+        return ' '.join(owners_identifiers)
