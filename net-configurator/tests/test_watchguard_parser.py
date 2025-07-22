@@ -1,3 +1,5 @@
+"""Tests for WatchguardParser class from `net_configurator.watchguard_parser` module."""
+
 import json
 from pathlib import Path
 

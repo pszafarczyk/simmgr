@@ -25,6 +25,7 @@ pytest = "^8.4.0"
 ruff = "^0.11.13"
 mypy = "^1.16.0"
 complexipy = "^3.0.0"
+pytest-snapshot = "^0.9.0"
 
 [tool.mypy]
 files = ["src", "tests"]
