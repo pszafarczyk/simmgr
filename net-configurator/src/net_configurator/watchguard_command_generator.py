@@ -1,24 +1,23 @@
 """Classes for generating WatchGuard-specific commands."""
 
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator
 
 from net_configurator.rule import NetworkPeer
 from net_configurator.rule import NetworkService
+from net_configurator.rule import PacketFilter
 from net_configurator.rule import Rule
-from net_configurator.rule import RuleFilter
 
 
 class WatchguardCommandGenerator:
     """WatchGuard-specific command generator."""
-    
+
     def __init__(self, commands: Optional[list[str]] = None) -> None:
         """Placeholder."""
-        self.commands = commands if commands is not None
+        self.commands = commands if commands is not None else []
         self.command_helper = WatchguardCommandGeneratorHelper()
-    
-    @staticmethod
-    def add_rule(rule: Rule):
+
+    def add_rule(self, rule: Rule) -> None:
         """Generate commands to add a rule.
 
         Args:
@@ -32,8 +31,7 @@ class WatchguardCommandGenerator:
             self.commands.append(f'policy-tag {self.command_helper.build_owners(rule.owners)}')
             self.commands.append('apply')
 
-    @staticmethod
-    def delete_rule(name: str):
+    def delete_rule(self, name: str) -> None:
         """Generate command to delete a rule.
 
         Args:
@@ -42,10 +40,10 @@ class WatchguardCommandGenerator:
         Returns:
             str: A generated command.
         """
-        self.commands.append(f'no rule {name}')
+        with self.enter_config_context(), self.enter_policy_context():
+            self.commands.append(f'no rule {name}')
 
-    @staticmethod
-    def read_rules():
+    def read_rules(self) -> None:
         """Generate command to read all rules.
 
         Returns:
@@ -53,15 +51,15 @@ class WatchguardCommandGenerator:
         """
         self.commands.append('show rule')
 
-    def read_owners():
+    def read_owners(self) -> None:
         """Generate command to read tags.
 
         Returns:
             str: A generated command.
         """
-        self.commands.append('show policy-type')
+        self.commands.append('show policy-tag')
 
-    def read_rule(name: str) -> str:
+    def read_rule(self, name: str) -> None:
         """Generate command to read a specific rule.
 
         Args:
@@ -72,51 +70,32 @@ class WatchguardCommandGenerator:
         """
         self.commands.append(f'show rule {name}')
 
-    @staticmethod
-    def add_owner(owners: tuple[str, ...]):
+    def add_owner(self, owners: tuple[str, ...]) -> None:
         """Generate commands to add a owner tags.
 
         Args:
             owners (tuple[str, ...]): List-like touple of owner tags.
-        
+
         Returns:
             list[str]: A list of generated commands.
         """
-        with self.enter_config_context(), self.command_helper.policy(commands):
-            self.commands.extend([f'policy-tag {owner} color 0xc0c0c0' for owner in owners])
+        with self.enter_config_context(), self.enter_policy_context():
+            self.commands.append([f'policy-tag {owner} color 0xc0c0c0' for owner in owners])
 
-    @staticmethod
-    def delete_owner(name: str):
-        """Generate commands to add a owner tags.
-
-        Args:
-            owners (tuple[str, ...]): List-like touple of owner tags.
-        
-        Returns:
-            list[str]: A list of generated commands.
-        """
-        with self.enter_config_context(), self.command_helper.policy(commands):
-            self.commands.extend(f'no policy-tag {owner}')
-
-    @staticmethod
-    def add_filter(rule_filter: RuleFilter) -> list[str]:
+    def add_filter(self, rule_filter: PacketFilter) -> None:
         """Generate commands to add a filter.
 
         Args:
-            rule_filter (RuleFilter): The filter to be added.
+            rule_filter (PacketFilter): The filter to be added.
 
         Returns:
             list[str]: A list of generated commands.
         """
-        commands: list[str] = []
-        with CommandBuilder.config(commands), CommandBuilder.policy(commands):
-            commands.extend([f'policy-type {rule_filter.identifier} {CommandBuilder.build_service(service)}' for service in rule_filter.root])
-            commands.append('apply')
+        with self.enter_config_context(), self.enter_policy_context():
+            self.commands.append([f'policy-type {rule_filter.identifier} {self.command_helper.build_service(service)}' for service in rule_filter.root])
+            self.commands.append('apply')
 
-        return commands
-
-    @staticmethod
-    def delete_filter(name: str) -> list[str]:
+    def delete_filter(self, name: str) -> None:
         """Generate command to delete a filter.
 
         Args:
@@ -125,19 +104,18 @@ class WatchguardCommandGenerator:
         Returns:
             list[str]: A list of generated commands.
         """
-        return [f'no policy-type {name}']
+        with self.enter_config_context(), self.enter_policy_context():
+            self.commands.append(f'no policy-type {name}')
 
-    @staticmethod
-    def read_filters() -> str:
+    def read_filters(self) -> None:
         """Generate command to list managed filters.
 
         Returns:
             str: A generated command.
         """
-        return 'show policy-type'
+        self.commands.append('show policy-type')
 
-    @staticmethod
-    def read_filter(name: str) -> str:
+    def read_filter(self, name: str) -> None:
         """Generate command to read a specific filter.
 
         Args:
@@ -146,13 +124,12 @@ class WatchguardCommandGenerator:
         Returns:
             str: A generated command.
         """
-        return f'show policy-type {name}'
-    
-    
+        self.commands.append(f'show policy-type {name}')
+
     def get_commands(self) -> None:
         """Placeholder."""
         return self.commands
-    
+
     @contextmanager
     def enter_config_context(self) -> Iterator[None]:
         """Context manager to open and close a config block."""
@@ -199,8 +176,10 @@ class WatchguardCommandGenerator:
         finally:
             self.commands.append('exit')
 
+
 class WatchguardCommandGeneratorHelper:
     """Placeholder."""
+
     def build_network(self, networks: tuple[NetworkPeer, ...]) -> str:
         """Build network string from a list of NetworkPeer objects.
 
