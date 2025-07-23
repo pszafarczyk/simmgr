@@ -1,71 +1,64 @@
 """Tests for WatchguardParser class from `net_configurator.watchguard_parser` module."""
 
+from ipaddress import IPv4Address
+from ipaddress import IPv4Network
 from unittest.mock import patch
 
-from pluggy import Result
 import pytest
 
-from net_configurator.rule import NetworkPeer, Owner
+from net_configurator.rule import NetworkPeer
 from net_configurator.rule import NetworkService
-from net_configurator.rule import Rule
+from net_configurator.rule import Owner
 from net_configurator.rule import PacketFilter
+from net_configurator.rule import Rule
 from net_configurator.watchguard_command_generator import WatchguardCommandGenerator
-from ipaddress import IPv4Address, IPv4Network
-
-
-def to_ip_obj(ip_str):
-    """Helper method for converting str to ips."""
-    if '/' in ip_str:
-        return IPv4Network(ip_str)
-
-    return IPv4Address(ip_str)
 
 
 @pytest.fixture
-def network_peer_single():
+def network_peer_single() -> NetworkPeer:
     """Fixture for a single IP NetworkPeer."""
-    return NetworkPeer(ip_low=to_ip_obj('192.168.1.1'))
+    return NetworkPeer(ip_low=IPv4Address('192.168.1.1'))
 
 
 @pytest.fixture
-def network_peer_range():
+def network_peer_range() -> NetworkPeer:
     """Fixture for a range IP NetworkPeer."""
     return NetworkPeer(ip_low=IPv4Address('192.168.1.1'), ip_high=IPv4Address('192.168.1.10'))
 
 
 @pytest.fixture
-def network_peer_network():
+def network_peer_network() -> NetworkPeer:
     """Fixture for a network IP NetworkPeer."""
     return NetworkPeer(ip_low=IPv4Network('192.168.1.0/24'))
 
 
 @pytest.fixture
-def network_service_tcp_single():
+def network_service_tcp_single() -> NetworkService:
     """Fixture for a TCP single port NetworkService."""
     return NetworkService(protocol='tcp', port_low=80)
 
 
 @pytest.fixture
-def network_service_tcp_range():
+def network_service_tcp_range() -> NetworkService:
     """Fixture for a TCP port range NetworkService."""
     return NetworkService(protocol='tcp', port_low=80, port_high=90)
 
 
 @pytest.fixture
-def network_service_icmp():
+def network_service_icmp() -> NetworkService:
     """Fixture for an ICMP NetworkService."""
     return NetworkService(protocol='icmp')
 
 
 @pytest.fixture
-def rule_filter(network_service_tcp_single):
+def rule_filter(network_service_tcp_single: NetworkService) -> PacketFilter:
     """Fixture for a PacketFilter with patched identifier."""
     with patch.object(PacketFilter, 'identifier', new_callable=lambda: 'test-filter-id'):
         return PacketFilter(root=(network_service_tcp_single,))
 
 
 @pytest.fixture
-def rule(network_peer_range, rule_filter):
+def rule(network_peer_range: NetworkPeer, rule_filter: PacketFilter) -> Rule:
     """Fixture for a Rule with patched identifier."""
     with patch.object(Rule, 'identifier', new_callable=lambda: 'test-rule-id'):
         return Rule(packet_filter=rule_filter, sources=(network_peer_range,), destinations=(network_peer_range,), owners=(Owner('X-1'), Owner('X-2')))
@@ -97,7 +90,7 @@ def rule(network_peer_range, rule_filter):
             (NetworkPeer(ip_low=IPv4Network('192.168.1.0/24')),),
             (NetworkPeer(ip_low=IPv4Network('192.168.2.0/24')),),
             (NetworkService(protocol='icmp'),),
-            tuple(),
+            (),
             'policy-type test-filter-id from network-ip 192.168.1.0/24 to network-ip 192.168.2.0/24',
             'policy-tag ',
         ),
@@ -116,7 +109,14 @@ def rule(network_peer_range, rule_filter):
     ],
     ids=['single_ip_tcp_single_port', 'range_ip_tcp_port_range', 'network_ip_icmp', 'mixed_sources_udp_single_port'],
 )
-def test_add_rule_matrix(sources, destinations, services, owners, expected_policy_type_cmd, expected_policy_tag_cmd):
+def test_add_rule_matrix(  # noqa: PLR0913
+    sources: tuple[NetworkPeer],
+    destinations: tuple[NetworkPeer],
+    services: tuple[NetworkService],
+    owners: tuple[Owner],
+    expected_policy_type_cmd: str,
+    expected_policy_tag_cmd: str,
+) -> None:
     """Test add_rule with various input combinations."""
     with (
         patch.object(Rule, 'identifier', new_callable=lambda: 'test-rule-id'),
@@ -148,18 +148,22 @@ def test_add_rule_matrix(sources, destinations, services, owners, expected_polic
     ],
     ids=['tcp_single_port', 'tcp_port_range', 'icmp', 'multiple_services'],
 )
-def test_add_filter_matrix(services, expected_policy_type_cmd):
+def test_add_filter_matrix(services: tuple[NetworkService], expected_policy_type_cmd: str) -> None:
     """Test add_filter with various service configurations."""
     command_generator = WatchguardCommandGenerator()
     with patch.object(PacketFilter, 'identifier', new_callable=lambda: 'test-filter-id'):
         rule_filter = PacketFilter(root=services)
-        expected_commands = ['config', 'policy'] + expected_policy_type_cmd + ['apply', 'exit', 'exit']
+
+        expected_commands = ['config', 'policy']
+        expected_commands.extend(expected_policy_type_cmd)
+        expected_commands.extend(['apply', 'exit', 'exit'])
+
         command_generator.add_filter(rule_filter)
         result = command_generator.get_commands()
         assert result == expected_commands
 
 
-def test_delete_rule():
+def test_delete_rule() -> None:
     """Test the delete_rule method generates correct command."""
     command_generator = WatchguardCommandGenerator()
     command_generator.delete_rule('test-rule-id')
@@ -167,7 +171,7 @@ def test_delete_rule():
     assert result == ['config', 'policy', 'no rule test-rule-id', 'exit', 'exit']
 
 
-def test_read_rules():
+def test_read_rules() -> None:
     """Test the read_rules method generates correct command."""
     command_generator = WatchguardCommandGenerator()
     command_generator.read_rules()
@@ -175,7 +179,7 @@ def test_read_rules():
     assert result == ['show rule']
 
 
-def test_read_owners():
+def test_read_owners() -> None:
     """Test the read_owners method generates correct command."""
     command_generator = WatchguardCommandGenerator()
     command_generator.read_owners()
@@ -183,7 +187,7 @@ def test_read_owners():
     assert result == ['show policy-tag']
 
 
-def test_read_rule():
+def test_read_rule() -> None:
     """Test the read_rule method generates correct command."""
     command_generator = WatchguardCommandGenerator()
     command_generator.read_rule('test-rule-id')
@@ -191,7 +195,7 @@ def test_read_rule():
     assert result == ['show rule test-rule-id']
 
 
-def test_add_owner():
+def test_add_owner() -> None:
     """Test the add_owner method generates correct commands."""
     owners = ('X-1', 'X-2')
     expected_commands = ['config', 'policy', 'policy-tag X-1 color 0xc0c0c0', 'policy-tag X-2 color 0xc0c0c0', 'exit', 'exit']
@@ -201,7 +205,7 @@ def test_add_owner():
     assert result == expected_commands
 
 
-def test_delete_filter():
+def test_delete_filter() -> None:
     """Test the delete_filter method generates correct command."""
     command_generator = WatchguardCommandGenerator()
     command_generator.delete_filter('test-filter-id')
@@ -209,7 +213,7 @@ def test_delete_filter():
     assert result == ['config', 'policy', 'no policy-type test-filter-id', 'exit', 'exit']
 
 
-def test_read_filters():
+def test_read_filters() -> None:
     """Test the read_filters method generates correct command."""
     command_generator = WatchguardCommandGenerator()
     command_generator.read_filters()
@@ -217,7 +221,7 @@ def test_read_filters():
     assert result == ['show policy-type']
 
 
-def test_read_filter():
+def test_read_filter() -> None:
     """Test the read_filter method generates correct command."""
     command_generator = WatchguardCommandGenerator()
     command_generator.read_filter('test-filter-id')
