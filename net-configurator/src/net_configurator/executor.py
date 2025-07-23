@@ -124,7 +124,7 @@ class Executor:
                 raise ExecutorDisconnectTimeoutError(retries=20) from err
             self.__connection = None
 
-    def _send_command(self, command: str, expect_output: str = '.*WG[a-zA-Z()/]*#$') -> str:
+    def _send_command(self, command: str, expect_output: str = '.*WG[0-9a-zA-Z()/-]*#$') -> str:
         """Wrapper for Netmiko send_command.
 
         Args:
