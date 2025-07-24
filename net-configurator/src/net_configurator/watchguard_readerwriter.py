@@ -19,7 +19,7 @@ class WatchguardReaderWriter(WatchguardReader):
         command_generator.add_rule(rule)
         commands = command_generator.get_commands()
         for command in commands:
-            response = self.__executor.execute(command)
+            response = self._executor.execute(command)
             parse.check_for_error(response)
 
     def delete_rule(self, rule_identifier: str) -> None:
@@ -30,7 +30,7 @@ class WatchguardReaderWriter(WatchguardReader):
         command_generator.delete_rule(rule_identifier)
         commands = command_generator.get_commands()
         for command in commands:
-            response = self.__executor.execute(command)
+            response = self._executor.execute(command)
             parse.check_for_error(response)
 
     def add_filter(self, packet_filter: PacketFilter) -> None:
@@ -41,7 +41,7 @@ class WatchguardReaderWriter(WatchguardReader):
         command_generator.add_filter(packet_filter)
         commands = command_generator.get_commands()
         for command in commands:
-            response = self.__executor.execute(command)
+            response = self._executor.execute(command)
             parse.check_for_error(response)
 
     def delete_filter(self, filter_identifier: str) -> None:
@@ -52,7 +52,7 @@ class WatchguardReaderWriter(WatchguardReader):
         command_generator.delete_filter(filter_identifier)
         commands = command_generator.get_commands()
         for command in commands:
-            response = self.__executor.execute(command)
+            response = self._executor.execute(command)
             parse.check_for_error(response)
 
     def add_owner(self, owner: Owner) -> None:
@@ -63,7 +63,7 @@ class WatchguardReaderWriter(WatchguardReader):
         command_generator.add_owner(owner)
         commands = command_generator.get_commands()
         for command in commands:
-            response = self.__executor.execute(command)
+            response = self._executor.execute(command)
             parse.check_for_error(response)
 
     def delete_owner(self, owner_identifier: str) -> None:
@@ -74,7 +74,7 @@ class WatchguardReaderWriter(WatchguardReader):
         command_generator.delete_owner(owner_identifier)
         commands = command_generator.get_commands()
         for command in commands:
-            response = self.__executor.execute(command)
+            response = self._executor.execute(command)
             parse.check_for_error(response)
 
     def apply_changes(self) -> None:

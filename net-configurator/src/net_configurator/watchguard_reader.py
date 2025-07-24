@@ -10,7 +10,7 @@ class WatchguardReader:
     """Interface with methods for reading."""
 
     def __init__(self, device_config: dict[str, Any]) -> None:
-        """Initialize the __executor and connect to the device.
+        """Initialize the _executor and connect to the device.
 
         Args:
             device_config (dict): Dictionary containing connection parameters.
@@ -27,23 +27,23 @@ class WatchguardReader:
                 key_file (Optional[str]): Path to private key file.
                 passphrase (Optional[str]): Passphrase for encrypted private key.
         """
-        self.__executor = Executor(device_config)
+        self._executor = Executor(device_config)
 
     def __enter__(self) -> None:
         """Enter method for context manager."""
-        self.__executor.__enter__()
+        self._executor.__enter__()
 
     def __exit__(self, exc_type: type[BaseException] | None, exc_value: BaseException | None, exc_tb: TracebackType | None) -> None:
         """Exit method for context manager."""
-        self.__executor.__exit__(exc_type, exc_value, exc_tb)
+        self._executor.__exit__(exc_type, exc_value, exc_tb)
 
     def open(self) -> None:
         """Opens reader."""
-        self.__executor.connect()
+        self._executor.connect()
 
     def close(self) -> None:
         """Closes reader."""
-        self.__executor.disconnect()
+        self._executor.disconnect()
 
     def read_all_rules(self) -> list[Any]:
         """read_all_rules stub."""
@@ -56,20 +56,20 @@ class WatchguardReader:
         command_generator.read_rules()
         commands = command_generator.get_commands()
         for command in commands:
-            response = self.__executor.execute(command)
+            response = self._executor.execute(command)
             rule_names = parse.extract_rule_names(response)
 
         for rule in rule_names:
             command_generator = WatchguardCommandGenerator()
             command_generator.read_rule(rule)
             command = command_generator.get_commands()
-            response = self.__executor.execute(command[0])
+            response = self._executor.execute(command[0])
             rules_without_filters.append(parse.parse_rule(response))
 
         for rule in rules_without_filters:
             command_generator = WatchguardCommandGenerator()
             command_generator.read_filter(rule.filter_name)
-            response = self.__executor.execute(command_generator.get_commands()[0])
+            response = self._executor.execute(command_generator.get_commands()[0])
             packet_filter = parse.parse_filter(response)
             rule_to_append = rule
             rule_to_append.filter_name = packet_filter
@@ -79,8 +79,31 @@ class WatchguardReader:
 
     def read_all_filters(self) -> list[Any]:
         """read_all_filters stub."""
-        return []
+        packet_filter_names = []
+        packet_filters = []
+        command_generator = WatchguardCommandGenerator()
+        parse = WatchguardParser()
+
+        command_generator.read_filters()
+        command = command_generator.get_commands()
+        response = self._executor.execute(command[0])
+        packet_filter_names = parse.extract_filter_names(response)
+        for packet_filter_name in packet_filter_names:
+            command_generator = WatchguardCommandGenerator()
+            command_generator.read_filter(packet_filter_name)
+            command = command_generator.get_commands()
+            response = self._executor.execute(command[0])
+            packet_filters.append(parse.parse_filter(response))
+
+        return packet_filters
 
     def read_all_owners(self) -> list[str]:
         """read_all_owners stub."""
-        return []
+        """read_all_filters stub."""
+        command_generator = WatchguardCommandGenerator()
+        parse = WatchguardParser()
+
+        command_generator.read_owners()
+        command = command_generator.get_commands()
+        response = self._executor.execute(command[0])
+        return parse.extract_owner_names(response)

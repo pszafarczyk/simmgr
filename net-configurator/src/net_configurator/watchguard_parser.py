@@ -43,9 +43,13 @@ class WatchguardParser:
     @staticmethod
     def extract_owner_names(data: str) -> list[str]:
         """Extract all unique rule IDs."""
-        if data:
-            pass
-        return ['']
+        pattern = re.compile(r'X-[A-Za-z0-9-_]+')
+        matches = []
+        for line in data.splitlines():
+            match = pattern.search(line)
+            if match:
+                matches.append(match.group(0))
+        return matches
 
     @staticmethod
     def extract_filter_names(data: str) -> list[str]:
