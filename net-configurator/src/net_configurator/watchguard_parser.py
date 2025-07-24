@@ -70,6 +70,13 @@ class WatchguardParser:
         return matches
 
     @staticmethod
+    def check_for_error(data: str) -> bool:
+        """Parse a rule text into a structured dictionary of attributes."""
+        if data:
+            ...
+        return False
+
+    @staticmethod
     def _parse_network(network_text: str) -> Network:
         """Parse network."""
         network_text = network_text.strip()

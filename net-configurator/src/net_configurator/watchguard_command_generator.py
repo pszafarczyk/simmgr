@@ -29,7 +29,8 @@ class WatchguardCommandGenerator:
         """
         with self.enter_config_context(), self.enter_policy_context(), self.enter_rule_context(rule.identifier):
             self.commands.append(f'policy-type {rule.packet_filter.identifier} {self.command_helper.build_from(rule)} {self.command_helper.build_to(rule)}')
-            self.commands.append(f'policy-tag {self.command_helper.build_owners(rule.owners)}')
+            if rule.owners:
+                self.commands.append(f'policy-tag {self.command_helper.build_owners(rule.owners)}')
             self.commands.append('apply')
 
     def delete_rule(self, name: str) -> None:
@@ -71,17 +72,30 @@ class WatchguardCommandGenerator:
         """
         self.commands.append(f'show rule {name}')
 
-    def add_owner(self, owners: tuple[str, ...]) -> None:
+    def add_owner(self, owner: Owner) -> None:
         """Generate commands to add a owner tags.
 
         Args:
-            owners (tuple[str, ...]): List-like touple of owner tags.
+            owner (Owner): Owner object to be added.
 
         Returns:
             list[str]: A list of generated commands.
         """
         with self.enter_config_context(), self.enter_policy_context():
-            policy_tag_commands = [f'policy-tag {owner} color 0xc0c0c0' for owner in owners]
+            policy_tag_commands = [f'policy-tag {owner.identifier} color 0xc0c0c0']
+            self.commands.extend(policy_tag_commands)
+
+    def delete_owner(self, owner: str) -> None:
+        """Generate commands to add a owner tags.
+
+        Args:
+            owner (str): Name of owner tags.
+
+        Returns:
+            list[str]: A list of generated commands.
+        """
+        with self.enter_config_context(), self.enter_policy_context():
+            policy_tag_commands = f'no policy-tag {owner}'
             self.commands.extend(policy_tag_commands)
 
     def add_filter(self, packet_filter: PacketFilter) -> None:

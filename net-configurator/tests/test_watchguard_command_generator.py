@@ -92,7 +92,7 @@ def rule(network_peer_range: NetworkPeer, rule_filter: PacketFilter) -> Rule:
             (NetworkService(protocol='icmp'),),
             (),
             'policy-type test-filter-id from network-ip 192.168.1.0/24 to network-ip 192.168.2.0/24',
-            'policy-tag ',
+            None,
         ),
         # Mixed sources, UDP single port, multiple owners
         (
@@ -124,7 +124,9 @@ def test_add_rule_matrix(  # noqa: PLR0913
     ):
         rule_filter = PacketFilter(root=services)
         rule = Rule(packet_filter=rule_filter, sources=sources, destinations=destinations, owners=owners)
-        expected_commands = ['config', 'policy', 'rule test-rule-id', expected_policy_type_cmd, expected_policy_tag_cmd, 'apply', 'exit', 'exit', 'exit']
+        expected_commands = list(
+            filter(None, ['config', 'policy', 'rule test-rule-id', expected_policy_type_cmd, expected_policy_tag_cmd, 'apply', 'exit', 'exit', 'exit'])
+        )
         command_generator = WatchguardCommandGenerator()
         command_generator.add_rule(rule)
         result = command_generator.get_commands()
@@ -197,10 +199,10 @@ def test_read_rule() -> None:
 
 def test_add_owner() -> None:
     """Test the add_owner method generates correct commands."""
-    owners = ('X-1', 'X-2')
-    expected_commands = ['config', 'policy', 'policy-tag X-1 color 0xc0c0c0', 'policy-tag X-2 color 0xc0c0c0', 'exit', 'exit']
+    owner = Owner('X-1')
+    expected_commands = ['config', 'policy', 'policy-tag X-1 color 0xc0c0c0', 'exit', 'exit']
     command_generator = WatchguardCommandGenerator()
-    command_generator.add_owner(owners)
+    command_generator.add_owner(owner)
     result = command_generator.get_commands()
     assert result == expected_commands
 

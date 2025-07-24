@@ -1,8 +1,16 @@
-class WatchguardReader():
+from typing import Any
+from types import TracebackType
+
+from net_configurator.executor import Executor
+from net_configurator.watchguard_command_generator import WatchguardCommandGenerator
+from net_configurator.watchguard_parser import WatchguardParser
+
+
+class WatchguardReader:
     """Interface with methods for reading."""
-    
+
     def __init__(self, device_config: dict[str, Any]) -> None:
-        """Initialize the Executor and connect to the device.
+        """Initialize the __executor and connect to the device.
 
         Args:
             device_config (dict): Dictionary containing connection parameters.
@@ -19,7 +27,7 @@ class WatchguardReader():
                 key_file (Optional[str]): Path to private key file.
                 passphrase (Optional[str]): Passphrase for encrypted private key.
         """
-        self.executor = Executor(device_config)
+        self.__executor = Executor(device_config)
 
     def __enter__(self) -> None:
         """Enter method for context manager."""
@@ -27,44 +35,52 @@ class WatchguardReader():
 
     def __exit__(self, exc_type: type[BaseException] | None, exc_value: BaseException | None, exc_tb: TracebackType | None) -> None:
         """Exit method for context manager."""
-        self.executor.__exit__(exc_type, exc_value, exc_tb)
+        self.__executor.__exit__(exc_type, exc_value, exc_tb)
 
     def open(self) -> None:
         """Opens reader."""
-        self.executor.connect()
+        self.__executor.connect()
 
     def close(self) -> None:
         """Closes reader."""
-        self.executor.disconnect()
+        self.__executor.disconnect()
 
     def read_all_rules(self) -> list[Any]:
         """read_all_rules stub."""
+        rules_without_filters = []
+        rule_names = []
         rules = []
+        command_generator = WatchguardCommandGenerator()
+        parse = WatchguardParser()
 
-        self.command_generator.read_rules()
-        command = self.get_commands()
-        response = executor.execute(command)
-        rules = parse.extract_rule_names(response)
-        for rule in rules
-            command = self.command_generator.read_rule(rule)
-            response = executor.execute(command)
-            rules.append(parse.parse_rule(response))
+        command_generator.read_rules()
+        commands = command_generator.get_commands()
+        for command in commands:
+            response = self.__executor.execute(command)
+            rule_names = parse.extract_rule_names(response)
+
+        for rule in rule_names:
+            command_generator = WatchguardCommandGenerator()
+            command_generator.read_rule(rule)
+            command = command_generator.get_commands()
+            response = self.__executor.execute(command[0])
+            rules_without_filters.append(parse.parse_rule(response))
+
+        for rule in rules_without_filters:
+            command_generator = WatchguardCommandGenerator()
+            command_generator.read_filter(rule.filter_name)
+            response = self.__executor.execute(command_generator.get_commands()[0])
+            packet_filter = parse.parse_filter(response)
+            rule_to_append = rule
+            rule_to_append.filter_name = packet_filter
+            rules.append(rule_to_append)
+
+        return rules
 
     def read_all_filters(self) -> list[Any]:
         """read_all_filters stub."""
-        filters = []
-
-        self.command_generator.read_filters()
-        command = self.get_commands()
-        response = executor.execute(command)
-        rules = parse.extract_filter_names(response)
-        for rule in rules
-            command = self.command_generator.read_filter(rule)
-            response = executor.execute(command)
-            filters.append(parse.parse_filter(response))
+        return []
 
     def read_all_owners(self) -> list[str]:
         """read_all_owners stub."""
-        command = command_generator.read_all_owners()
-        response = executor.execute(command)
-        owners = parse.extract_owner_names(response)    
+        return []
