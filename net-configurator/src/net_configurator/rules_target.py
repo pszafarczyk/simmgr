@@ -1,5 +1,6 @@
 """RuleTarget represents destination for rules."""
 
+from typing import cast
 from typing import Protocol
 
 from net_configurator.rule import Owner
@@ -9,36 +10,36 @@ from net_configurator.rules_source import ReaderInterface
 from net_configurator.rules_source import RulesSource
 
 
-class ReaderWriterInterface(ReaderInterface):
+class ReaderWriterInterface(ReaderInterface, Protocol):
     """Interface with methods for reading and writing."""
 
     def add_rule(self, rule: Rule) -> None:
         """add_rule stub."""
-        ...  # noqa: PIE790
+        ...
 
     def delete_rule(self, rule_identifier: str) -> None:
         """delete_rule stub."""
-        ...  # noqa: PIE790
+        ...
 
     def add_filter(self, packet_filter: PacketFilter) -> None:
         """add_filter stub."""
-        ...  # noqa: PIE790
+        ...
 
     def delete_filter(self, filter_identifier: str) -> None:
         """delete_filter stub."""
-        ...  # noqa: PIE790
+        ...
 
     def add_owner(self, owner: Owner) -> None:
         """add_owner stub."""
-        ...  # noqa: PIE790
+        ...
 
     def delete_owner(self, owner_identifier: str) -> None:
         """delete_owner stub."""
-        ...  # noqa: PIE790
+        ...
 
     def apply_changes(self) -> None:
         """apply_changes stub."""
-        ...  # noqa: PIE790
+        ...
 
 
 class ReaderWriterFactoryInterface(Protocol):
@@ -49,7 +50,7 @@ class ReaderWriterFactoryInterface(Protocol):
         ...
 
 
-class RulesTarget(RulesSource[ReaderWriterInterface]):
+class RulesTarget(RulesSource):
     """Target for rules to be read and written."""
 
     def __init__(self, target_handler: ReaderWriterInterface) -> None:
@@ -60,6 +61,10 @@ class RulesTarget(RulesSource[ReaderWriterInterface]):
         """
         super().__init__(source_handler=target_handler)
 
+    def __handler_as_readerwriter(self) -> ReaderWriterInterface:
+        """Returns casted handler to make mypy understand code."""
+        return cast(ReaderWriterInterface, self._handler)
+
     def add_rule(self, rule: Rule) -> None:
         """Adds rule to target handler.
 
@@ -69,7 +74,7 @@ class RulesTarget(RulesSource[ReaderWriterInterface]):
         Raises:
             Exception: Exceptions raised by add_rule of given handler.
         """
-        self._handler.add_rule(rule)
+        self.__handler_as_readerwriter().add_rule(rule)
 
     def delete_rule(self, rule_identifier: str) -> None:
         """Deletes rule from target handler.
@@ -80,7 +85,7 @@ class RulesTarget(RulesSource[ReaderWriterInterface]):
         Raises:
             Exception: Exceptions raised by delete_rule of given handler.
         """
-        self._handler.delete_rule(rule_identifier)
+        self.__handler_as_readerwriter().delete_rule(rule_identifier)
 
     def add_filter(self, packet_filter: PacketFilter) -> None:
         """Adds packet filter to target handler.
@@ -91,7 +96,7 @@ class RulesTarget(RulesSource[ReaderWriterInterface]):
         Raises:
             Exception: Exceptions raised by add_filter of given handler.
         """
-        self._handler.add_filter(packet_filter)
+        self.__handler_as_readerwriter().add_filter(packet_filter)
 
     def delete_filter(self, filter_identifier: str) -> None:
         """Deletes packet filter at target handler.
@@ -102,7 +107,7 @@ class RulesTarget(RulesSource[ReaderWriterInterface]):
         Raises:
             Exception: Exceptions raised by delete_filter of given handler.
         """
-        self._handler.delete_filter(filter_identifier)
+        self.__handler_as_readerwriter().delete_filter(filter_identifier)
 
     def add_owner(self, owner: Owner) -> None:
         """Adds owner to target handler.
@@ -113,7 +118,7 @@ class RulesTarget(RulesSource[ReaderWriterInterface]):
         Raises:
             Exception: Exceptions raised by add_owner of given handler.
         """
-        self._handler.add_owner(owner)
+        self.__handler_as_readerwriter().add_owner(owner)
 
     def delete_owner(self, owner_identifier: str) -> None:
         """Deletes owner at target handler.
@@ -124,7 +129,7 @@ class RulesTarget(RulesSource[ReaderWriterInterface]):
         Raises:
             Exception: Exceptions raised by delete_owner of given handler.
         """
-        self._handler.delete_owner(owner_identifier)
+        self.__handler_as_readerwriter().delete_owner(owner_identifier)
 
     def apply_changes(self) -> None:
         """Applies changes to target handler.
@@ -132,4 +137,4 @@ class RulesTarget(RulesSource[ReaderWriterInterface]):
         Raises:
             Exception: Exceptions raised by apply_changes of given handler.
         """
-        self._handler.apply_changes()
+        self.__handler_as_readerwriter().apply_changes()
