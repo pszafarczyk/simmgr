@@ -2,9 +2,7 @@
 
 from types import TracebackType
 from typing import Any
-from typing import Generic
 from typing import Protocol
-from typing import TypeVar
 
 from pydantic import ValidationError
 
@@ -58,13 +56,10 @@ class ReaderFactoryInterface(Protocol):
         ...
 
 
-T = TypeVar('T', bound=ReaderInterface)
-
-
-class RulesSource(Generic[T]):
+class RulesSource:
     """Source of rules read with given ReaderInterface."""
 
-    def __init__(self, source_handler: T) -> None:
+    def __init__(self, source_handler: ReaderInterface) -> None:
         """Sets the source handler.
 
         Args:

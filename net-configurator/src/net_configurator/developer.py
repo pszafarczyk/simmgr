@@ -19,7 +19,6 @@ from net_configurator.discrepancy_finder import RuleDiscrepancyFinder
 from net_configurator.optimizer import Optimizer
 from net_configurator.rule import Rule
 from net_configurator.rules_source import ReaderFactoryInterface
-from net_configurator.rules_source import ReaderInterface
 from net_configurator.rules_source import RulesSource
 from net_configurator.rules_target import ReaderWriterFactoryInterface
 from net_configurator.rules_target import RulesTarget
@@ -50,7 +49,7 @@ class Developer:
         """Inits Developer with source and target interface factories."""
         self.__source_factory = source_factory
         self.__target_factory = target_factory
-        self.__source: RulesSource[ReaderInterface]
+        self.__source: RulesSource
         self.__recreate_target()
 
         self.source_retry_count = SOURCE_RETRY_COUNT
