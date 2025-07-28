@@ -47,7 +47,7 @@ def test_rules_source_with_valid_input() -> None:
     """RulesSource with valid reader data gives valid output."""
     dummy_reader = Mock(spec=ReaderInterface)
     dummy_reader.read_all_rules.return_value = [
-        {'sources': [{'ip_low': '10.1.3.173'}], 'destinations': [{'ip_low': '172.31.0.100'}], 'packet_filter': [{'protocol': 'icmp'}]}
+        {'sources': [{'ip_low': '10.1.3.173'}], 'destinations': [{'ip_low': '172.31.0.100'}], 'packet_filter': {'services': [{'protocol': 'icmp'}]}}
     ]
     rules_source = RulesSource(dummy_reader)
     rules = rules_source.read_all_rules()
