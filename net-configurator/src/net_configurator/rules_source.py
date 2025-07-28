@@ -1,5 +1,6 @@
 """Importing rules from external source."""
 
+import logging
 from types import TracebackType
 from typing import Any
 from typing import Protocol
@@ -66,6 +67,7 @@ class RulesSource:
             source_handler (ReaderInterface): Object used to read from.
         """
         self._handler = source_handler
+        self.__logger = logging.getLogger(self.__class__.__name__)
 
     def __enter__(self) -> None:
         """Enter method for context manager.
@@ -110,10 +112,33 @@ class RulesSource:
             Exception: Exceptions raised by read_all_rules of given handler.
         """
         try:
-            return {Rule(**rule) for rule in self._handler.read_all_rules()}
+            return {self.__deserialize_rule(rule) for rule in self._handler.read_all_rules()}
         except ValidationError as e:
             msg = 'Rules cannot be deserialized'
             raise DeserializationError(msg) from e
+
+    def __deserialize_rule(self, rule_serialized: Any) -> Rule:
+        """Deserializes rule.
+
+        If identifier is found in serialized data, it is checked against calculated
+        one. Identifier of rule's packet filter is ignored.
+
+        Args:
+            rule_serialized (Any): Data used to create Rule object.
+
+        Returns:
+            Rule: Deserialized Rule object.
+
+        Raises:
+            DeserializationError: when incorrect identifier is deserialized.
+            ValidationError: when Rule's validation fails.
+        """
+        self.__logger.debug('Deserializing rule: %s', rule_serialized)
+        rule = Rule(**rule_serialized)
+        if isinstance(rule_serialized, dict) and 'identifier' in rule_serialized and rule_serialized['identifier'] != rule.identifier:
+            msg = f'Found incorrect rule identifier {rule_serialized["identifier"]} ({rule.identifier} expected)'
+            raise DeserializationError(msg)
+        return rule
 
     def read_all_filters(self) -> set[PacketFilter]:
         """Returns set of filters from external source.
@@ -126,10 +151,37 @@ class RulesSource:
             Exception: Exceptions raised by read_all_filters of given handler.
         """
         try:
-            return {PacketFilter(packet_filter) for packet_filter in self._handler.read_all_filters()}
+            return {self.__deserialize_packet_filter(packet_filter) for packet_filter in self._handler.read_all_filters()}
         except ValidationError as e:
             msg = 'Filters cannot be deserialized'
             raise DeserializationError(msg) from e
+
+    def __deserialize_packet_filter(self, packet_filter_serialized: Any) -> PacketFilter:
+        """Deserializes packet filter.
+
+        If identifier is found in serialized data, it is checked against calculated
+        one.
+
+        Args:
+            packet_filter_serialized (Any): Data used to create PacketFilter object.
+
+        Returns:
+            PacketFilter: Deserialized PacketFilter object.
+
+        Raises:
+            DeserializationError: when incorrect identifier is deserialized.
+            ValidationError: when PacketFilter's validation fails.
+        """
+        self.__logger.debug('Deserializing packet filter: %s', packet_filter_serialized)
+        packet_filter = PacketFilter(**packet_filter_serialized)
+        if (
+            isinstance(packet_filter_serialized, dict)
+            and 'identifier' in packet_filter_serialized
+            and packet_filter_serialized['identifier'] != packet_filter.identifier
+        ):
+            msg = f'Found incorrect packet filter identifier {packet_filter_serialized["identifier"]} ({packet_filter.identifier} expected)'
+            raise DeserializationError(msg)
+        return packet_filter
 
     def read_all_owners(self) -> set[Owner]:
         """Returns set of owners from external source.
