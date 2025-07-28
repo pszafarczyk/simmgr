@@ -72,8 +72,8 @@ class WatchguardReader:
             response = self._executor.execute(command_generator.get_commands()[0])
             packet_filter = parse.parse_filter(response)
             rule_to_append = rule
-            rule_to_append.filter_name = packet_filter
-            rules.append(rule_to_append)
+            rule_to_append.packet_filter = packet_filter
+            rules.append(rule_to_append.to_dict())
 
         return rules
 
@@ -93,7 +93,7 @@ class WatchguardReader:
             command_generator.read_filter(packet_filter_name)
             command = command_generator.get_commands()
             response = self._executor.execute(command[0])
-            packet_filters.append(parse.parse_filter(response))
+            packet_filters.append(vars(parse.parse_filter(response)))
 
         return packet_filters
 

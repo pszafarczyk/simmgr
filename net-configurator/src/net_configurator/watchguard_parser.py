@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from dataclasses import field
 import re
+from typing import Optional
 
 from dataclasses_json import dataclass_json
 
@@ -13,7 +14,17 @@ class Network:
     """Represents a network range or single IP/CIDR."""
 
     ip_low: str
-    ip_high: str
+    ip_high: Optional[str]
+
+
+@dataclass_json
+@dataclass
+class Filter:
+    """Represents a filter with protocol and port information."""
+
+    protocol: str
+    port_low: Optional[str]
+    port_high: Optional[str]
 
 
 @dataclass_json
@@ -25,16 +36,7 @@ class RuleAttributes:
     destinations: list[Network] = field(default_factory=list)
     filter_name: str = ''
     owners: list[str] = field(default_factory=list)
-
-
-@dataclass_json
-@dataclass
-class Filter:
-    """Represents a filter with protocol and port information."""
-
-    protocol: str
-    port_low: str
-    port_high: str
+    packet_filter: list[Filter] = field(default_factory=list)
 
 
 class WatchguardParser:
@@ -84,7 +86,7 @@ class WatchguardParser:
     def _parse_network(network_text: str) -> Network:
         """Parse network."""
         network_text = network_text.strip()
-        ip_low = ip_high = ''
+        ip_low = ip_high = None
 
         if '-' in network_text:
             ip_low, ip_high = network_text.split('-')
@@ -190,7 +192,7 @@ class WatchguardParser:
         """Extract single."""
         protocol = match.group(1)
         details = match.group(2)
-        port_low = port_high = ''
+        port_low = port_high = None
 
         if protocol in {'tcp', 'udp'}:
             port_match = re.search(r'port\((\d+)\)', details)
