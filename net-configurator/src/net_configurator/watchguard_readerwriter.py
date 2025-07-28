@@ -79,3 +79,4 @@ class WatchguardReaderWriter(WatchguardReader):
 
     def apply_changes(self) -> None:
         """apply_changes stub."""
+        ...
