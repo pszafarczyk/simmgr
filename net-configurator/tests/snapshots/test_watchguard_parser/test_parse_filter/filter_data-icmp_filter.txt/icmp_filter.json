@@ -1,7 +1,7 @@
 [
   {
     "protocol": "icmp",
-    "port_low": "",
-    "port_high": ""
+    "port_low": null,
+    "port_high": null
   }
 ]

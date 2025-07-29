@@ -2,23 +2,24 @@
   "sources": [
     {
       "ip_low": "10.1.1.1",
-      "ip_high": ""
+      "ip_high": null
     },
     {
       "ip_low": "20.2.2.2",
-      "ip_high": ""
+      "ip_high": null
     }
   ],
   "destinations": [
     {
       "ip_low": "10.1.1.1",
-      "ip_high": ""
+      "ip_high": null
     },
     {
       "ip_low": "20.2.2.2",
-      "ip_high": ""
+      "ip_high": null
     }
   ],
   "filter_name": "X-c281b3a9e94dcfaaef1b028a8c501b656d4bb17e",
-  "owners": []
+  "owners": [],
+  "packet_filter": []
 }

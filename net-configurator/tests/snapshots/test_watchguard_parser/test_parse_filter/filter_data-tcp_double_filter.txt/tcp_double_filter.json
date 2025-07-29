@@ -2,11 +2,11 @@
   {
     "protocol": "tcp",
     "port_low": "1521",
-    "port_high": ""
+    "port_high": null
   },
   {
     "protocol": "tcp",
     "port_low": "1526",
-    "port_high": ""
+    "port_high": null
   }
 ]

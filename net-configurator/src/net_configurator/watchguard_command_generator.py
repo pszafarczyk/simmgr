@@ -108,7 +108,9 @@ class WatchguardCommandGenerator:
             list[str]: A list of generated commands.
         """
         with self.enter_config_context(), self.enter_policy_context():
-            policy_type_commands = [f'policy-type {packet_filter.identifier} {self.command_helper.build_service(service)}' for service in packet_filter.root]
+            policy_type_commands = [
+                f'policy-type {packet_filter.identifier} {self.command_helper.build_service(service)}' for service in packet_filter.services
+            ]
             self.commands.extend(policy_type_commands)
             self.commands.append('apply')
 

@@ -54,7 +54,7 @@ def network_service_icmp() -> NetworkService:
 def rule_filter(network_service_tcp_single: NetworkService) -> PacketFilter:
     """Fixture for a PacketFilter with patched identifier."""
     with patch.object(PacketFilter, 'identifier', new_callable=lambda: 'test-filter-id'):
-        return PacketFilter(root=(network_service_tcp_single,))
+        return PacketFilter(services=(network_service_tcp_single,))
 
 
 @pytest.fixture
@@ -122,7 +122,7 @@ def test_add_rule_matrix(  # noqa: PLR0913
         patch.object(Rule, 'identifier', new_callable=lambda: 'test-rule-id'),
         patch.object(PacketFilter, 'identifier', new_callable=lambda: 'test-filter-id'),
     ):
-        rule_filter = PacketFilter(root=services)
+        rule_filter = PacketFilter(services=services)
         rule = Rule(packet_filter=rule_filter, sources=sources, destinations=destinations, owners=owners)
         expected_commands = list(
             filter(None, ['config', 'policy', 'rule test-rule-id', expected_policy_type_cmd, expected_policy_tag_cmd, 'apply', 'exit', 'exit', 'exit'])
@@ -154,7 +154,7 @@ def test_add_filter_matrix(services: tuple[NetworkService], expected_policy_type
     """Test add_filter with various service configurations."""
     command_generator = WatchguardCommandGenerator()
     with patch.object(PacketFilter, 'identifier', new_callable=lambda: 'test-filter-id'):
-        rule_filter = PacketFilter(root=services)
+        rule_filter = PacketFilter(services=services)
 
         expected_commands = ['config', 'policy']
         expected_commands.extend(expected_policy_type_cmd)

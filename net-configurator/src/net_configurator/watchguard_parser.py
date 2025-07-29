@@ -83,6 +83,27 @@ class WatchguardParser:
         return False
 
     @staticmethod
+    def parse_rule(rule_text: str) -> RuleAttributes:
+        """Parse a rule text into a structured dictionary of attributes.
+
+        Args:
+            rule_text (str): The input rule text to parse.
+        """
+        cleaned_lines = WatchguardParser._clean_rule_lines(rule_text)
+        return WatchguardParser._extract_attributes(cleaned_lines)
+
+    @staticmethod
+    def parse_filter(data: str) -> list[Filter]:
+        """Parse service lines into structured protocol/port dictionaries."""
+        result = []
+        lines = data.strip().split('\n')
+        for line in lines:
+            parsed = WatchguardParser._parse_filter_line(line)
+            if parsed:
+                result.append(parsed)
+        return result
+
+    @staticmethod
     def _parse_network(network_text: str) -> Network:
         """Parse network."""
         network_text = network_text.strip()
@@ -97,16 +118,6 @@ class WatchguardParser:
             ip_low = network_text
 
         return Network(ip_low=ip_low, ip_high=ip_high)
-
-    @staticmethod
-    def parse_rule(rule_text: str) -> RuleAttributes:
-        """Parse a rule text into a structured dictionary of attributes.
-
-        Args:
-            rule_text (str): The input rule text to parse.
-        """
-        cleaned_lines = WatchguardParser._clean_rule_lines(rule_text)
-        return WatchguardParser._extract_attributes(cleaned_lines)
 
     @staticmethod
     def _clean_rule_lines(rule_text: str) -> list[list[str]]:
@@ -216,14 +227,3 @@ class WatchguardParser:
             return WatchguardParser._extract_single(match)
 
         return None
-
-    @staticmethod
-    def parse_filter(data: str) -> list[Filter]:
-        """Parse service lines into structured protocol/port dictionaries."""
-        result = []
-        lines = data.strip().split('\n')
-        for line in lines:
-            parsed = WatchguardParser._parse_filter_line(line)
-            if parsed:
-                result.append(parsed)
-        return result
