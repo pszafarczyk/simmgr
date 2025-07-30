@@ -96,9 +96,7 @@ def test_no_owners_number_of_elements(owners: tuple[str, ...] | None) -> None:
 def test_rule_can_be_set_member(network_service: NetworkService) -> None:
     """It is possible to add Rule to set."""
     rule = Rule(
-        sources=(NetworkPeer(ip_low='1.1.1.1'),),
-        destinations=(NetworkPeer(ip_low='1.1.1.1'),),
-        packet_filter=PacketFilter(services=(network_service,))
+        sources=(NetworkPeer(ip_low='1.1.1.1'),), destinations=(NetworkPeer(ip_low='1.1.1.1'),), packet_filter=PacketFilter(services=(network_service,))
     )
     rule_set = set()
     rule_set.add(rule)

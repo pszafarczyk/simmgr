@@ -35,7 +35,7 @@ def test_packetfilter_identifier_independent_of_order() -> None:
 def test_packetfilter_with_no_services_raises() -> None:
     """PacketFilter shoud raise with no services."""
     with pytest.raises(ValidationError, match='Field required'):
-        PacketFilter()
+        PacketFilter()  # type: ignore[call-arg]
 
 
 def test_packetfilter_with_none_raises() -> None:
@@ -47,7 +47,7 @@ def test_packetfilter_with_none_raises() -> None:
 def test_packetfilter_with_empty_services_raises() -> None:
     """PacketFilter shoud raise with no services."""
     with pytest.raises(ValidationError, match='Tuple should have at least 1 item after validation'):
-        PacketFilter(services=tuple())
+        PacketFilter(services=())
 
 
 @pytest.mark.parametrize(
