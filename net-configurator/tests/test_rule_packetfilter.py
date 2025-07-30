@@ -67,5 +67,7 @@ def test_packetfilter_has_correct_number_of_services(services: tuple[NetworkServ
 def test_packetfilter_can_be_set_member() -> None:
     """It is possible to add PacketFilter to set."""
     packet_filter = PacketFilter(services=(NetworkService(protocol='icmp'),))
-    set_size = len(set(packet_filter))
+    packet_filter_set = set()
+    packet_filter_set.add(packet_filter)
+    set_size = len(packet_filter_set)
     assert set_size == 1
