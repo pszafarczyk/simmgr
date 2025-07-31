@@ -1,7 +1,13 @@
 """Developer processes rules from source and updates target."""
 
+from collections.abc import Callable
+from collections.abc import Generator
+from contextlib import contextmanager
 import logging
+from typing import Any
+from typing import TypeVar
 
+from pydantic import BaseModel
 from tenacity import before_sleep_log
 from tenacity import retry_if_exception_type
 from tenacity import RetryCallState
@@ -13,6 +19,7 @@ from tenacity import wait_fixed
 
 from net_configurator.base_exceptions import FatalError
 from net_configurator.base_exceptions import RecoverableError
+from net_configurator.discrepancy_finder import BaseDiscrepancyFinder
 from net_configurator.discrepancy_finder import FilterDiscrepancyFinder
 from net_configurator.discrepancy_finder import OwnerDiscrepancyFinder
 from net_configurator.discrepancy_finder import RuleDiscrepancyFinder
@@ -32,6 +39,9 @@ SOURCE_RETRY_DELAY = 10
 TARGET_RETRY_COUNT = 3
 TARGET_RETRY_TIMEOUT = 800
 TARGET_RETRY_DELAY = 200
+
+
+BaseModelT = TypeVar('BaseModelT', bound=BaseModel)
 
 
 class SourceError(FatalError):
@@ -167,7 +177,7 @@ class Developer:
         except (RecoverableError, FatalError) as e:
             raise TargetError from e
 
-    def __apply_source_to_target(self, desired_rules: set[Rule], desired_filters: set[PacketFilter], desired_owners: set[Owner]) -> None:  #  noqa: C901
+    def __apply_source_to_target(self, desired_rules: set[Rule], desired_filters: set[PacketFilter], desired_owners: set[Owner]) -> None:
         """Applies necessary changes to target.
 
         Raises:
@@ -182,18 +192,23 @@ class Developer:
         filter_discrepancy_finder = FilterDiscrepancyFinder(desired_filters, existing_filters)
         owner_discrepancy_finder = OwnerDiscrepancyFinder(desired_owners, existing_owners)
 
-        for rule_identifier in rule_discrepancy_finder.get_elements_to_delete():
-            self.__target.delete_rule(rule_identifier)
-        for packet_filter_identifier in filter_discrepancy_finder.get_elements_to_delete():
-            self.__target.delete_filter(packet_filter_identifier)
-        for owner_identifier in owner_discrepancy_finder.get_elements_to_delete():
-            self.__target.delete_owner(owner_identifier)
-
-        for owner in owner_discrepancy_finder.get_elements_to_add():
-            self.__target.add_owner(owner)
-        for packet_filter in filter_discrepancy_finder.get_elements_to_add():
-            self.__target.add_filter(packet_filter)
-        for rule in rule_discrepancy_finder.get_elements_to_add():
-            self.__target.add_rule(rule)
+        # order must be del: rules, filters, owners, add: owners, filters, rules
+        with (
+            self.__process_elements(rule_discrepancy_finder, self.__target.delete_rule, self.__target.add_rule),
+            self.__process_elements(filter_discrepancy_finder, self.__target.delete_filter, self.__target.add_filter),
+            self.__process_elements(owner_discrepancy_finder, self.__target.delete_owner, self.__target.add_owner),
+        ):
+            pass
 
         self.__target.apply_changes()
+
+    @contextmanager
+    def __process_elements(
+        self, finder: BaseDiscrepancyFinder[Any], delete_method: Callable[[str], None], add_method: Callable[[BaseModelT], None]
+    ) -> Generator[Any, Any, Any]:
+        """Deletes and then adds elements in context manager."""
+        for identifier in finder.get_elements_to_delete():
+            delete_method(identifier)
+        yield
+        for element in finder.get_elements_to_add():
+            add_method(element)
