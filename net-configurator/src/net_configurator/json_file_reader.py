@@ -36,6 +36,7 @@ class JSONFileReader:
         """
         self.__path = Path(path)
         self._file: IO[str] | None = None
+        self.__logger = logging.getLogger(self.__class__.__name__)
 
     def __enter__(self) -> None:
         """Enter method for context manager.
@@ -62,10 +63,12 @@ class JSONFileReader:
         if not self._file:
             try:
                 self._file = self.__path.open(mode=self._file_mode)
-                logging.getLogger(self.__class__.__name__).debug('File %s opened', str(self.__path))
+                self.__logger.debug('File %s opened', str(self.__path))
             except (FileNotFoundError, IsADirectoryError, NotADirectoryError, OSError, PermissionError) as e:
                 msg = f'Cannot open {self.__path!s}'
                 raise FileAccessError(msg) from e
+        else:
+            self.__logger.warning('Open requested on already opened file')
 
     def close(self) -> None:
         """Closes file.
@@ -73,17 +76,16 @@ class JSONFileReader:
         Raises:
             FileAccessError: If file cannot be closed.
         """
-        logger = logging.getLogger(self.__class__.__name__)
         if self._file:
             try:
                 self._file.close()
-                logger.debug('File %s closed', str(self.__path))
+                self.__logger.debug('File %s closed', str(self.__path))
             except OSError as e:
                 msg = f'Cannot close {self.__path!s}'
                 raise FileAccessError(msg) from e
             self._file = None
         else:
-            logger.warning('Close requested on closed file')
+            self.__logger.warning('Close requested on closed file')
 
     @cached_property
     def _file_decoded(self) -> list[Any]:
