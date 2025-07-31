@@ -10,7 +10,7 @@ class WatchguardReader:
     """Interface with methods for reading."""
 
     def __init__(self, device_config: dict[str, Any]) -> None:
-        """Initialize the _executor and connect to the device.
+        """Initialize the _executor.
 
         Args:
             device_config (dict): Dictionary containing connection parameters.
@@ -108,3 +108,31 @@ class WatchguardReader:
         command = command_generator.get_commands()
         response = self._executor.execute(command[0])
         return parse.extract_owner_names(response)
+
+
+class WatchguardReaderFactory:
+    """Factory creating WatchguardReader."""
+
+    def __init__(self, device_cfg: dict[str, Any]) -> None:
+        """Sets the device configuration.
+
+        Args:
+            device_cfg (dict): Dictionary containing connection parameters.
+            The supported keys include:
+                ip (str): IP address of the device.
+                host (str): Hostname of the device.
+                username (str): Username for authentication.
+                password (Optional[str]): Password for authentication.
+                secret (str): Enable/privileged mode password.
+                port (Optional[int]): SSH or Telnet port to use.
+                device_type (str): Type of device (e.g.,watchguard_fireware').
+                global_delay_factor (float): Global delay factor for command execution.
+                use_keys (bool): Whether to use SSH keys.
+                key_file (Optional[str]): Path to private key file.
+                passphrase (Optional[str]): Passphrase for encrypted private key.
+        """
+        self.__device_cfg = device_cfg
+
+    def create(self) -> WatchguardReader:
+        """Create Reader for Watchguard."""
+        return WatchguardReader(self.__device_cfg)

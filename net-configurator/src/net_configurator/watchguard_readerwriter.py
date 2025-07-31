@@ -1,5 +1,7 @@
 """Reader/writer for Watchguard routers."""
 
+from typing import Any
+
 from net_configurator.rule import Owner
 from net_configurator.rule import PacketFilter
 from net_configurator.rule import Rule
@@ -80,3 +82,31 @@ class WatchguardReaderWriter(WatchguardReader):
     def apply_changes(self) -> None:
         """apply_changes stub."""
         ...
+
+
+class WatchguardReaderWriterFactory:
+    """Factory creating WatchguardReaderWriter."""
+
+    def __init__(self, device_cfg: dict[str, Any]) -> None:
+        """Sets the device configuration.
+
+        Args:
+            device_cfg (dict): Dictionary containing connection parameters.
+            The supported keys include:
+                ip (str): IP address of the device.
+                host (str): Hostname of the device.
+                username (str): Username for authentication.
+                password (Optional[str]): Password for authentication.
+                secret (str): Enable/privileged mode password.
+                port (Optional[int]): SSH or Telnet port to use.
+                device_type (str): Type of device (e.g.,watchguard_fireware').
+                global_delay_factor (float): Global delay factor for command execution.
+                use_keys (bool): Whether to use SSH keys.
+                key_file (Optional[str]): Path to private key file.
+                passphrase (Optional[str]): Passphrase for encrypted private key.
+        """
+        self.__device_cfg = device_cfg
+
+    def create(self) -> WatchguardReaderWriter:
+        """Create ReaderWriter for Watchguard."""
+        return WatchguardReaderWriter(self.__device_cfg)
