@@ -66,7 +66,7 @@ class Developer:
         self.__source_factory = source_factory
         self.__target_factory = target_factory
         self.__source: RulesSource
-        self.__recreate_target()
+        self.__target: RulesTarget
 
         self.source_retry_count = SOURCE_RETRY_COUNT
         self.source_retry_timeout = SOURCE_RETRY_TIMEOUT
@@ -79,10 +79,12 @@ class Developer:
 
     def __recreate_source(self) -> None:
         """(Re)creates rules source."""
+        self.__logger.debug('Source (re)creating')
         self.__source = RulesSource(self.__source_factory.create())
 
     def __recreate_target(self) -> None:
         """(Re)creates rules target."""
+        self.__logger.debug('Target (re)creating')
         self.__target = RulesTarget(self.__target_factory.create())
 
     def run(self) -> None:
