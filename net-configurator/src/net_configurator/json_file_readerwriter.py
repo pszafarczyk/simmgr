@@ -110,7 +110,9 @@ class JSONFileReaderWriter(JSONFileReader):
         rules = RuleList(list(self.__rules))
         if self._file:
             try:
+                self._file.seek(0)
                 self._file.write(rules.model_dump_json(indent=2, exclude_none=True))
+                self._file.truncate()
                 self.__logger.debug('Changes written to file')
             except OSError as e:
                 msg = 'Cannot write to file'
