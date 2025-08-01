@@ -170,7 +170,7 @@ def test_delete_rule() -> None:
     command_generator = WatchguardCommandBuilder()
     command_generator.delete_rule('test-rule-id')
     result = command_generator.build()
-    assert result == ['config', 'policy', 'no rule test-rule-id', 'exit', 'exit']
+    assert result == ['config', 'policy', 'no rule test-rule-id', 'apply', 'exit', 'exit']
 
 
 def test_read_rules() -> None:
@@ -200,11 +200,19 @@ def test_read_rule() -> None:
 def test_add_owner() -> None:
     """Test the add_owner method generates correct commands."""
     owner = Owner('X-1')
-    expected_commands = ['config', 'policy', 'policy-tag X-1 color 0xc0c0c0', 'exit', 'exit']
+    expected_commands = ['config', 'policy', 'policy-tag X-1 color 0xc0c0c0', 'apply', 'exit', 'exit']
     command_generator = WatchguardCommandBuilder()
     command_generator.add_owner(owner)
     result = command_generator.build()
     assert result == expected_commands
+
+
+def test_delete_owner() -> None:
+    """Test the delete_filter method generates correct command."""
+    command_generator = WatchguardCommandBuilder()
+    command_generator.delete_owner('X-1')
+    result = command_generator.build()
+    assert result == ['config', 'policy', 'no policy-tag X-1', 'apply', 'exit', 'exit']
 
 
 def test_delete_filter() -> None:
@@ -212,7 +220,7 @@ def test_delete_filter() -> None:
     command_generator = WatchguardCommandBuilder()
     command_generator.delete_filter('test-filter-id')
     result = command_generator.build()
-    assert result == ['config', 'policy', 'no policy-type test-filter-id', 'exit', 'exit']
+    assert result == ['config', 'policy', 'no policy-type test-filter-id', 'apply', 'exit', 'exit']
 
 
 def test_read_filters() -> None:

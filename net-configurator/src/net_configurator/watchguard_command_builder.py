@@ -44,6 +44,7 @@ class WatchguardCommandBuilder:
         """
         with self.enter_config_context(), self.enter_policy_context():
             self.commands.append(f'no rule {name}')
+            self.commands.append('apply')
 
     def read_rules(self) -> None:
         """Generate command to read all rules.
@@ -82,8 +83,9 @@ class WatchguardCommandBuilder:
             list[str]: A list of generated commands.
         """
         with self.enter_config_context(), self.enter_policy_context():
-            policy_tag_commands = [f'policy-tag {owner.identifier} color 0xc0c0c0']
-            self.commands.extend(policy_tag_commands)
+            policy_tag_commands = f'policy-tag {owner.identifier} color 0xc0c0c0'
+            self.commands.append(policy_tag_commands)
+            self.commands.append('apply')
 
     def delete_owner(self, owner: str) -> None:
         """Generate commands to add a owner tags.
@@ -96,7 +98,8 @@ class WatchguardCommandBuilder:
         """
         with self.enter_config_context(), self.enter_policy_context():
             policy_tag_commands = f'no policy-tag {owner}'
-            self.commands.extend(policy_tag_commands)
+            self.commands.append(policy_tag_commands)
+            self.commands.append('apply')
 
     def add_filter(self, packet_filter: PacketFilter) -> None:
         """Generate commands to add a filter.
@@ -125,6 +128,7 @@ class WatchguardCommandBuilder:
         """
         with self.enter_config_context(), self.enter_policy_context():
             self.commands.append(f'no policy-type {name}')
+            self.commands.append('apply')
 
     def read_filters(self) -> None:
         """Generate command to list managed filters.
