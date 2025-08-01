@@ -19,7 +19,6 @@ class WatchguardCommandBuilder:
         self.__logger = logging.getLogger(self.__class__.__name__)
         self.__logger.debug('Initializing WatchguardCommandBuilder')
         self.commands = commands if commands is not None else []
-        self.command_helper = WatchguardCommandBuilderHelper()
         self.__logger.debug('Command builder initialized with %d commands', len(self.commands))
 
     def add_rule(self, rule: Rule) -> None:
@@ -33,9 +32,9 @@ class WatchguardCommandBuilder:
         """
         self.__logger.debug('Building commands to add rule: %s', rule.identifier)
         with self.enter_config_context(), self.enter_policy_context(), self.enter_rule_context(rule.identifier):
-            self.commands.append(f'policy-type {rule.packet_filter.identifier} {self.command_helper.build_from(rule)} {self.command_helper.build_to(rule)}')
+            self.commands.append(f'policy-type {rule.packet_filter.identifier} {self.__build_from(rule)} {self.__build_to(rule)}')
             if rule.owners:
-                self.commands.append(f'policy-tag {self.command_helper.build_owners(rule.owners)}')
+                self.commands.append(f'policy-tag {self.__build_owners(rule.owners)}')
             self.commands.append('apply')
         self.__logger.info('Added rule commands for rule: %s', rule.identifier)
 
@@ -119,9 +118,7 @@ class WatchguardCommandBuilder:
         """
         self.__logger.debug('Building commands to add filter: %s', packet_filter.identifier)
         with self.enter_config_context(), self.enter_policy_context():
-            policy_type_commands = [
-                f'policy-type {packet_filter.identifier} {self.command_helper.build_service(service)}' for service in packet_filter.services
-            ]
+            policy_type_commands = [f'policy-type {packet_filter.identifier} {self.__build_service(service)}' for service in packet_filter.services]
             self.commands.extend(policy_type_commands)
             self.commands.append('apply')
         self.__logger.info('Added filter commands for filter: %s', packet_filter.identifier)
@@ -214,17 +211,7 @@ class WatchguardCommandBuilder:
             self.commands.append('exit')
             self.__logger.debug('Exiting filter context for filter: %s', name)
 
-
-class WatchguardCommandBuilderHelper:
-    """Helper class for building WatchGuard command strings."""
-
-    def __init__(self):
-        """Initialize WatchguardCommandBuilderHelper with logger."""
-        self.__logger = logging.getLogger(self.__class__.__name__)
-        self.__logger.debug('Initializing WatchguardCommandBuilderHelper')
-
-    @staticmethod
-    def build_network(networks: tuple[NetworkPeer, ...]) -> str:
+    def __build_network(self, networks: tuple[NetworkPeer, ...]) -> str:
         """Build network string from a list of NetworkPeer objects.
 
         Args:
@@ -233,25 +220,23 @@ class WatchguardCommandBuilderHelper:
         Returns:
             str: A command-ready network string.
         """
-        logger = logging.getLogger(__name__)
-        logger.debug('Building network string for %d networks', len(networks))
+        self.__logger.debug('Building network string for %d networks', len(networks))
         parts = []
         for network in networks:
             if network.is_address_single():
                 parts.append(f'host-ip {network.ip_low}')
-                logger.debug('Added single address: %s', network.ip_low)
+                self.__logger.debug('Added single address: %s', network.ip_low)
             elif network.is_address_range():
                 parts.append(f'host-range {network.ip_low} {network.ip_high}')
-                logger.debug('Added address range: %s - %s', network.ip_low, network.ip_high)
+                self.__logger.debug('Added address range: %s - %s', network.ip_low, network.ip_high)
             else:
                 parts.append(f'network-ip {network.ip_low}')
-                logger.debug('Added network IP: %s', network.ip_low)
+                self.__logger.debug('Added network IP: %s', network.ip_low)
         result = ' '.join(parts)
-        logger.debug('Built network string: %s', result)
+        self.__logger.debug('Built network string: %s', result)
         return result
 
-    @staticmethod
-    def build_service(service: NetworkService) -> str:
+    def __build_service(self, service: NetworkService) -> str:
         """Build service string from a NetworkService object.
 
         Args:
@@ -260,24 +245,22 @@ class WatchguardCommandBuilderHelper:
         Returns:
             str: A command-ready service string.
         """
-        logger = logging.getLogger(__name__)
-        logger.debug('Building service string for protocol: %s', service.protocol)
+        self.__logger.debug('Building service string for protocol: %s', service.protocol)
         parts = [f'protocol {service.protocol}']
         if service.protocol == 'icmp':
             parts.append('Any 255')
-            logger.debug('Added ICMP service: Any 255')
+            self.__logger.debug('Added ICMP service: Any 255')
         elif service.is_port_single():
             parts.append(f'{service.port_low}')
-            logger.debug('Added single port: %s', service.port_low)
+            self.__logger.debug('Added single port: %s', service.port_low)
         else:
             parts.append(f'port-range {service.port_low} {service.port_high}')
-            logger.debug('Added port range: %s - %s', service.port_low, service.port_high)
+            self.__logger.debug('Added port range: %s - %s', service.port_low, service.port_high)
         result = ' '.join(parts)
-        logger.debug('Built service string: %s', result)
+        self.__logger.debug('Built service string: %s', result)
         return result
 
-    @staticmethod
-    def build_from(rule: Rule) -> str:
+    def __build_from(self, rule: Rule) -> str:
         """Build the 'from' part of a rule command.
 
         Args:
@@ -286,14 +269,12 @@ class WatchguardCommandBuilderHelper:
         Returns:
             str: A command-ready source string.
         """
-        logger = logging.getLogger(__name__)
-        logger.debug('Building "from" part for rule: %s', rule.identifier)
-        result = f'from {WatchguardCommandBuilderHelper.build_network(rule.sources)}'
-        logger.debug('Built "from" string: %s', result)
+        self.__logger.debug('Building "from" part for rule: %s', rule.identifier)
+        result = f'from {self.__build_network(rule.sources)}'
+        self.__logger.debug('Built "from" string: %s', result)
         return result
 
-    @staticmethod
-    def build_to(rule: Rule) -> str:
+    def __build_to(self, rule: Rule) -> str:
         """Build the 'to' part of a rule command.
 
         Args:
@@ -302,14 +283,12 @@ class WatchguardCommandBuilderHelper:
         Returns:
             str: A command-ready destination string.
         """
-        logger = logging.getLogger(__name__)
-        logger.debug('Building "to" part for rule: %s', rule.identifier)
-        result = f'to {WatchguardCommandBuilderHelper.build_network(rule.destinations)}'
-        logger.debug('Built "to" string: %s', result)
+        self.__logger.debug('Building "to" part for rule: %s', rule.identifier)
+        result = f'to {self.__build_network(rule.destinations)}'
+        self.__logger.debug('Built "to" string: %s', result)
         return result
 
-    @staticmethod
-    def build_owners(owners: tuple[Owner, ...]) -> str:
+    def __build_owners(self, owners: tuple[Owner, ...]) -> str:
         """Build the owners part of a rule command.
 
         Args:
@@ -318,9 +297,8 @@ class WatchguardCommandBuilderHelper:
         Returns:
             str: A string with owner tags.
         """
-        logger = logging.getLogger(__name__)
-        logger.debug('Building owners string for %d owners', len(owners))
+        self.__logger.debug('Building owners string for %d owners', len(owners))
         owners_identifiers = [owner.identifier for owner in owners]
         result = ' '.join(owners_identifiers)
-        logger.debug('Built owners string: %s', result)
+        self.__logger.debug('Built owners string: %s', result)
         return result
