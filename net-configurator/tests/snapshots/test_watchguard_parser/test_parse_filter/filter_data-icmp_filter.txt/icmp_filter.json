@@ -1,7 +1,9 @@
-[
-  {
-    "protocol": "icmp",
-    "port_low": null,
-    "port_high": null
-  }
-]
+{
+  "services": [
+    {
+      "protocol": "icmp",
+      "port_low": null,
+      "port_high": null
+    }
+  ]
+}
