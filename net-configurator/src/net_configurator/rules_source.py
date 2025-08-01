@@ -68,6 +68,7 @@ class RulesSource:
         """
         self._handler = source_handler
         self.__logger = logging.getLogger(self.__class__.__name__)
+        self.__logger.debug('Using handler %s', type(self._handler).__name__)
 
     def __enter__(self) -> None:
         """Enter method for context manager.
@@ -91,6 +92,7 @@ class RulesSource:
         Raises:
             Exception: Exceptions raised by open of given handler.
         """
+        self.__logger.debug('Opening handler')
         self._handler.open()
 
     def close(self) -> None:
@@ -99,6 +101,7 @@ class RulesSource:
         Raises:
             Exception: Exceptions raised by close of given handler.
         """
+        self.__logger.debug('Closing handler')
         self._handler.close()
 
     def read_all_rules(self) -> set[Rule]:
