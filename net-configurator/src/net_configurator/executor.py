@@ -14,8 +14,7 @@ from tenacity import RetryError
 from tenacity import stop_after_attempt
 from tenacity import wait_fixed
 
-
-SENSITIVE_KEYS = {'password', 'secret', 'passphrase'}
+from net_configurator.logg_sensitive_info_filter import redact_sensitive_info
 
 
 class ExecutorBaseError(Exception):
@@ -67,10 +66,6 @@ class ExecuteError(ExecutorBaseError):
     """Raised when command execution fails."""
 
     pass
-
-
-def redact_sensitive_info(config):
-    return {k: ('***REDACTED***' if k.lower() in SENSITIVE_KEYS else v) for k, v in config.items()}
 
 
 class Executor:
