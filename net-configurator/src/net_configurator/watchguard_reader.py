@@ -94,7 +94,7 @@ class WatchguardReader:
             command = command_generator.get_commands()
             response = self._executor.execute(command[0])
             filter_obj = parse.parse_filter(response)
-            packet_filters.append([f.to_dict() for f in filter_obj])
+            packet_filters.append(filter_obj)
 
         return packet_filters
 

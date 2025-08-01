@@ -93,15 +93,15 @@ class WatchguardParser:
         return WatchguardParser._extract_attributes(cleaned_lines)
 
     @staticmethod
-    def parse_filter(data: str) -> list[Filter]:
+    def parse_filter(data: str) -> dict[str, list[Filter]]:
         """Parse service lines into structured protocol/port dictionaries."""
-        result = []
+        filters = []
         lines = data.strip().split('\n')
         for line in lines:
             parsed = WatchguardParser._parse_filter_line(line)
             if parsed:
-                result.append(parsed)
-        return result
+                filters.append(parsed.__dict__)
+        return {'services': filters}
 
     @staticmethod
     def _parse_network(network_text: str) -> Network:
