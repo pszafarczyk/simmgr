@@ -1,5 +1,4 @@
-"""Classes for executing commands on the firewall."""
-
+import logging
 from typing import Any
 from typing import cast
 
@@ -17,17 +16,25 @@ from tenacity import wait_fixed
 class ExecutorBaseError(Exception):
     """Base class for Executor-related errors."""
 
+    pass
+
 
 class ExecutorConnectionTimeoutError(ExecutorBaseError):
     """Raised when connection attempt times out."""
+
+    pass
 
 
 class ExecutorAuthenticationError(ExecutorBaseError):
     """Raised when authentication fails."""
 
+    pass
+
 
 class ExecutorSocketError(ExecutorBaseError):
     """Raised when a socket error occurs during connection."""
+
+    pass
 
 
 class ExecutorDisconnectTimeoutError(ExecutorBaseError):
@@ -48,9 +55,13 @@ class ExecutorDisconnectTimeoutError(ExecutorBaseError):
 class NoConnectionError(ExecutorBaseError):
     """Raised when attempting to execute a command without an active connection."""
 
+    pass
+
 
 class ExecuteError(ExecutorBaseError):
     """Raised when command execution fails."""
+
+    pass
 
 
 class Executor:
@@ -76,14 +87,18 @@ class Executor:
         """
         self.__device = device_config
         self.__connection: BaseConnection | None = None
+        self.__logger = logging.getLogger(self.__class__.__name__)
+        self.__logger.debug('Initialized Executor with device config: %s', device_config)
 
     def __enter__(self) -> 'Executor':
         """Enter the runtime context related to this object."""
+        self.__logger.debug('Entering context manager')
         self.connect()
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Exit the runtime context and disconnect from the device."""
+        self.__logger.debug('Exiting context manager')
         self.disconnect()
 
     def connect(self) -> None:
@@ -99,16 +114,21 @@ class Executor:
         socket_error_msg = 'Socket error during connection'
 
         if not self.is_connected():
+            self.__logger.info('Attempting to connect to device: %s', self.__device.get('host', self.__device.get('ip')))
             try:
                 self.__connection = cast(BaseConnection, ConnectHandler(**self.__device))
+                self.__logger.info('Successfully connected to device')
             except NetmikoTimeoutException as err:
+                self.__logger.error('Connection timeout: %s', connection_timeout_msg)
                 raise ExecutorConnectionTimeoutError(connection_timeout_msg) from err
             except NetmikoAuthenticationException as err:
+                self.__logger.error('Authentication failed: %s', authentication_failed_msg)
                 raise ExecutorAuthenticationError(authentication_failed_msg) from err
             except OSError as err:
+                self.__logger.error('Socket error: %s', socket_error_msg)
                 raise ExecutorSocketError(socket_error_msg) from err
         else:
-            print('Warning: Already connected to the device')
+            self.__logger.warning('Already connected to the device')
 
     def disconnect(self) -> None:
         """Send 'exit' and wait until the connection is closed.
@@ -118,11 +138,16 @@ class Executor:
                 within expected time.
         """
         if self.is_connected():
+            self.__logger.info('Attempting to disconnect from device')
             try:
                 self._try_disconnect()
+                self.__logger.info('Successfully disconnected from device')
             except RetryError as err:
+                self.__logger.error('Disconnect timeout after %d retries', 20)
                 raise ExecutorDisconnectTimeoutError(retries=20) from err
             self.__connection = None
+        else:
+            self.__logger.debug('No active connection to disconnect')
 
     def _send_command(self, command: str, expect_output: str = '.*WG[0-9a-zA-Z()/-]*#$') -> str:
         """Wrapper for Netmiko send_command.
@@ -138,14 +163,20 @@ class Executor:
             ExecuteError: If command execution fails.
         """
         execute_error_msg = f'Failed to execute command: {command}'
+        self.__logger.debug('Sending command: %s', command)
         try:
-            return cast(str, self.__connection.send_command(command, expect_string=expect_output))  # type: ignore[union-attr]
+            output = cast(str, self.__connection.send_command(command, expect_string=expect_output))  # type: ignore[union-attr]
+            self.__logger.debug('Command output: %s', output)
+            return output
         except NetmikoBaseException as err:
+            self.__logger.error('Command execution failed: %s', execute_error_msg)
             raise ExecuteError(execute_error_msg) from err
 
     def is_connected(self) -> bool:
         """Check if there is connection."""
-        return isinstance(self.__connection, BaseConnection) and self.__connection.is_alive()
+        status = isinstance(self.__connection, BaseConnection) and self.__connection.is_alive()
+        self.__logger.debug('Connection status check: %s', status)
+        return status
 
     @retry(stop=stop_after_attempt(10), wait=wait_fixed(0.5))
     def _try_disconnect(self) -> None:
@@ -156,9 +187,11 @@ class Executor:
                 after retry period.
         """
         if self.is_connected():
+            self.__logger.debug('Sending exit command for disconnection')
             self._send_command('exit', expect_output='')
             if self.is_connected():
                 msg = 'Connection still active after exit command'
+                self.__logger.warning(msg)
                 raise ExecutorDisconnectTimeoutError(msg)
 
     def execute(self, command: str) -> str:
@@ -176,5 +209,7 @@ class Executor:
         """
         no_connection_msg = 'No active connection to device'
         if self.is_connected():
+            self.__logger.info('Executing command: %s', command)
             return self._send_command(command)
+        self.__logger.error(no_connection_msg)
         raise NoConnectionError(no_connection_msg)
