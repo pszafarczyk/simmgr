@@ -11,7 +11,7 @@ from net_configurator.rule import NetworkService
 from net_configurator.rule import Owner
 from net_configurator.rule import PacketFilter
 from net_configurator.rule import Rule
-from net_configurator.watchguard_command_generator import WatchguardCommandGenerator
+from net_configurator.watchguard_command_builder import WatchguardCommandBuilder
 
 
 @pytest.fixture
@@ -127,9 +127,9 @@ def test_add_rule_matrix(  # noqa: PLR0913
         expected_commands = list(
             filter(None, ['config', 'policy', 'rule test-rule-id', expected_policy_type_cmd, expected_policy_tag_cmd, 'apply', 'exit', 'exit', 'exit'])
         )
-        command_generator = WatchguardCommandGenerator()
+        command_generator = WatchguardCommandBuilder()
         command_generator.add_rule(rule)
-        result = command_generator.get_commands()
+        result = command_generator.build()
         assert result == expected_commands
 
 
@@ -152,7 +152,7 @@ def test_add_rule_matrix(  # noqa: PLR0913
 )
 def test_add_filter_matrix(services: tuple[NetworkService], expected_policy_type_cmd: str) -> None:
     """Test add_filter with various service configurations."""
-    command_generator = WatchguardCommandGenerator()
+    command_generator = WatchguardCommandBuilder()
     with patch.object(PacketFilter, 'identifier', new_callable=lambda: 'test-filter-id'):
         rule_filter = PacketFilter(services=services)
 
@@ -161,39 +161,39 @@ def test_add_filter_matrix(services: tuple[NetworkService], expected_policy_type
         expected_commands.extend(['apply', 'exit', 'exit'])
 
         command_generator.add_filter(rule_filter)
-        result = command_generator.get_commands()
+        result = command_generator.build()
         assert result == expected_commands
 
 
 def test_delete_rule() -> None:
     """Test the delete_rule method generates correct command."""
-    command_generator = WatchguardCommandGenerator()
+    command_generator = WatchguardCommandBuilder()
     command_generator.delete_rule('test-rule-id')
-    result = command_generator.get_commands()
+    result = command_generator.build()
     assert result == ['config', 'policy', 'no rule test-rule-id', 'exit', 'exit']
 
 
 def test_read_rules() -> None:
     """Test the read_rules method generates correct command."""
-    command_generator = WatchguardCommandGenerator()
+    command_generator = WatchguardCommandBuilder()
     command_generator.read_rules()
-    result = command_generator.get_commands()
+    result = command_generator.build()
     assert result == ['show rule']
 
 
 def test_read_owners() -> None:
     """Test the read_owners method generates correct command."""
-    command_generator = WatchguardCommandGenerator()
+    command_generator = WatchguardCommandBuilder()
     command_generator.read_owners()
-    result = command_generator.get_commands()
+    result = command_generator.build()
     assert result == ['show policy-tag']
 
 
 def test_read_rule() -> None:
     """Test the read_rule method generates correct command."""
-    command_generator = WatchguardCommandGenerator()
+    command_generator = WatchguardCommandBuilder()
     command_generator.read_rule('test-rule-id')
-    result = command_generator.get_commands()
+    result = command_generator.build()
     assert result == ['show rule test-rule-id']
 
 
@@ -201,31 +201,31 @@ def test_add_owner() -> None:
     """Test the add_owner method generates correct commands."""
     owner = Owner('X-1')
     expected_commands = ['config', 'policy', 'policy-tag X-1 color 0xc0c0c0', 'exit', 'exit']
-    command_generator = WatchguardCommandGenerator()
+    command_generator = WatchguardCommandBuilder()
     command_generator.add_owner(owner)
-    result = command_generator.get_commands()
+    result = command_generator.build()
     assert result == expected_commands
 
 
 def test_delete_filter() -> None:
     """Test the delete_filter method generates correct command."""
-    command_generator = WatchguardCommandGenerator()
+    command_generator = WatchguardCommandBuilder()
     command_generator.delete_filter('test-filter-id')
-    result = command_generator.get_commands()
+    result = command_generator.build()
     assert result == ['config', 'policy', 'no policy-type test-filter-id', 'exit', 'exit']
 
 
 def test_read_filters() -> None:
     """Test the read_filters method generates correct command."""
-    command_generator = WatchguardCommandGenerator()
+    command_generator = WatchguardCommandBuilder()
     command_generator.read_filters()
-    result = command_generator.get_commands()
+    result = command_generator.build()
     assert result == ['show policy-type']
 
 
 def test_read_filter() -> None:
     """Test the read_filter method generates correct command."""
-    command_generator = WatchguardCommandGenerator()
+    command_generator = WatchguardCommandBuilder()
     command_generator.read_filter('test-filter-id')
-    result = command_generator.get_commands()
+    result = command_generator.build()
     assert result == ['show policy-type test-filter-id']

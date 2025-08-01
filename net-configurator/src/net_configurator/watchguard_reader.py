@@ -2,7 +2,7 @@ from typing import Any
 from types import TracebackType
 
 from net_configurator.executor import Executor
-from net_configurator.watchguard_command_generator import WatchguardCommandGenerator
+from net_configurator.watchguard_command_builder import WatchguardCommandBuilder
 from net_configurator.watchguard_parser import WatchguardParser
 
 
@@ -50,26 +50,26 @@ class WatchguardReader:
         rules_without_filters = []
         rule_names = []
         rules = []
-        command_generator = WatchguardCommandGenerator()
+        command_generator = WatchguardCommandBuilder()
         parse = WatchguardParser()
 
         command_generator.read_rules()
-        commands = command_generator.get_commands()
+        commands = command_generator.build()
         for command in commands:
             response = self._executor.execute(command)
             rule_names = parse.extract_rule_names(response)
 
         for rule in rule_names:
-            command_generator = WatchguardCommandGenerator()
+            command_generator = WatchguardCommandBuilder()
             command_generator.read_rule(rule)
-            command = command_generator.get_commands()
+            command = command_generator.build()
             response = self._executor.execute(command[0])
             rules_without_filters.append(parse.parse_rule(response))
 
         for rule in rules_without_filters:
-            command_generator = WatchguardCommandGenerator()
+            command_generator = WatchguardCommandBuilder()
             command_generator.read_filter(rule.filter_name)
-            response = self._executor.execute(command_generator.get_commands()[0])
+            response = self._executor.execute(command_generator.build()[0])
             packet_filter = parse.parse_filter(response)
             rule_to_append = rule
             rule_to_append.packet_filter = packet_filter
@@ -81,17 +81,17 @@ class WatchguardReader:
         """read_all_filters stub."""
         packet_filter_names = []
         packet_filters = []
-        command_generator = WatchguardCommandGenerator()
+        command_generator = WatchguardCommandBuilder()
         parse = WatchguardParser()
 
         command_generator.read_filters()
-        command = command_generator.get_commands()
+        command = command_generator.build()
         response = self._executor.execute(command[0])
         packet_filter_names = parse.extract_filter_names(response)
         for packet_filter_name in packet_filter_names:
-            command_generator = WatchguardCommandGenerator()
+            command_generator = WatchguardCommandBuilder()
             command_generator.read_filter(packet_filter_name)
-            command = command_generator.get_commands()
+            command = command_generator.build()
             response = self._executor.execute(command[0])
             filter_obj = parse.parse_filter(response)
             packet_filters.append(filter_obj)
@@ -101,11 +101,11 @@ class WatchguardReader:
     def read_all_owners(self) -> list[str]:
         """read_all_owners stub."""
         """read_all_filters stub."""
-        command_generator = WatchguardCommandGenerator()
+        command_generator = WatchguardCommandBuilder()
         parse = WatchguardParser()
 
         command_generator.read_owners()
-        command = command_generator.get_commands()
+        command = command_generator.build()
         response = self._executor.execute(command[0])
         return parse.extract_owner_names(response)
 
