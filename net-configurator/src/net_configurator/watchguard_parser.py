@@ -35,7 +35,7 @@ class RuleAttributes:
     sources: list[Network] = field(default_factory=list)
     destinations: list[Network] = field(default_factory=list)
     filter_name: str = ''
-    owners: list[str] = field(default_factory=list)
+    owners: tuple[str, ...] = field(default_factory=tuple)
     packet_filter: list[Filter] = field(default_factory=list)
 
 
@@ -163,7 +163,7 @@ class WatchguardParser:
                 new_key = 'service'
 
             case 'Tags':
-                attributes.owners = [tag.strip() for tag in value.split(',')]
+                attributes.owners = tuple([tag.strip() for tag in value.split(',') if value])
                 new_key = 'Tags'
 
         return new_key
