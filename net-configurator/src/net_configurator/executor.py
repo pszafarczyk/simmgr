@@ -1,3 +1,5 @@
+"""Classes for executing commands on the firewall."""
+
 import logging
 from typing import Any
 from typing import cast
@@ -11,6 +13,9 @@ from tenacity import retry
 from tenacity import RetryError
 from tenacity import stop_after_attempt
 from tenacity import wait_fixed
+
+
+SENSITIVE_KEYS = {'password', 'secret', 'passphrase'}
 
 
 class ExecutorBaseError(Exception):
@@ -64,6 +69,10 @@ class ExecuteError(ExecutorBaseError):
     pass
 
 
+def redact_sensitive_info(config):
+    return {k: ('***REDACTED***' if k.lower() in SENSITIVE_KEYS else v) for k, v in config.items()}
+
+
 class Executor:
     """Executor for managing SSH connections and executing commands."""
 
@@ -88,7 +97,8 @@ class Executor:
         self.__device = device_config
         self.__connection: BaseConnection | None = None
         self.__logger = logging.getLogger(self.__class__.__name__)
-        self.__logger.debug('Initialized Executor with device config: %s', device_config)
+        safe_config = redact_sensitive_info(device_config)
+        self.__logger.debug('Initialized Executor with device config: %s', safe_config)
 
     def __enter__(self) -> 'Executor':
         """Enter the runtime context related to this object."""
@@ -109,22 +119,21 @@ class Executor:
             ExecutorAuthenticationError: If authentication fails.
             ExecutorSocketError: If a socket error occurs during connection.
         """
-        connection_timeout_msg = 'Connection timed out'
-        authentication_failed_msg = 'Authentication failed'
-        socket_error_msg = 'Socket error during connection'
-
         if not self.is_connected():
             self.__logger.info('Attempting to connect to device: %s', self.__device.get('host', self.__device.get('ip')))
             try:
                 self.__connection = cast(BaseConnection, ConnectHandler(**self.__device))
                 self.__logger.info('Successfully connected to device')
             except NetmikoTimeoutException as err:
+                connection_timeout_msg = 'Connection timed out'
                 self.__logger.error('Connection timeout: %s', connection_timeout_msg)
                 raise ExecutorConnectionTimeoutError(connection_timeout_msg) from err
             except NetmikoAuthenticationException as err:
+                authentication_failed_msg = 'Authentication failed'
                 self.__logger.error('Authentication failed: %s', authentication_failed_msg)
                 raise ExecutorAuthenticationError(authentication_failed_msg) from err
             except OSError as err:
+                socket_error_msg = 'Socket error during connection'
                 self.__logger.error('Socket error: %s', socket_error_msg)
                 raise ExecutorSocketError(socket_error_msg) from err
         else:
@@ -162,13 +171,13 @@ class Executor:
         Raises:
             ExecuteError: If command execution fails.
         """
-        execute_error_msg = f'Failed to execute command: {command}'
         self.__logger.debug('Sending command: %s', command)
         try:
             output = cast(str, self.__connection.send_command(command, expect_string=expect_output))  # type: ignore[union-attr]
-            self.__logger.debug('Command output: %s', output)
+            self.__logger.debug('Command executed successfully: %s', command)
             return output
         except NetmikoBaseException as err:
+            execute_error_msg = f'Failed to execute command: {command}'
             self.__logger.error('Command execution failed: %s', execute_error_msg)
             raise ExecuteError(execute_error_msg) from err
 
