@@ -134,7 +134,7 @@ class Executor:
             return
 
         try:
-            self._send_command('exit')  # type: ignore[union-attr]
+            self._send_command('exit')
         except (OSError, ExecuteError):
             self.__logger.info('Successfully disconnected from device')
             self.__connection = None
@@ -164,7 +164,7 @@ class Executor:
             return output  # noqa: TRY300
         except NetmikoBaseException as err:
             execute_error_msg = f'Failed to execute command: {command}'
-            self.__logger.exception('Command execution failed: %s', execute_error_msg)
+            self.__logger.error('Command execution failed: %s', execute_error_msg)  # noqa : TRY400
             raise ExecuteError(execute_error_msg) from err
 
     def is_connected(self) -> bool:

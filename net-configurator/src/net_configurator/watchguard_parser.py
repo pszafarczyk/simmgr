@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from dataclasses import field
 import logging
 import re
+from typing import Any
 
 from dataclasses_json import dataclass_json
 
@@ -36,13 +37,16 @@ class RuleAttributes:
     destinations: list[Network] = field(default_factory=list)
     filter_name: str = ''
     owners: tuple[str, ...] = field(default_factory=tuple)
-    packet_filter: list[Filter] = field(default_factory=list)
+    packet_filter: dict[str, Filter] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:  # type: ignore [empty-body]
+        """Empty implementation of to_dict dataclass_json implements it."""
 
 
 class WatchguardParser:
     """RuleManager class for managing WatchGuard Firebox firewall rules."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize WatchguardParser with logger."""
         self.__logger = logging.getLogger(self.__class__.__name__)
 
@@ -100,7 +104,7 @@ class WatchguardParser:
         self.__logger.info('Successfully parsed rule into attributes')
         return self._extract_attributes(cleaned_lines)
 
-    def parse_filter(self, data: str) -> dict[str, list[Filter]]:
+    def parse_filter(self, data: str) -> dict[str, Any]:
         """Parse service lines into structured protocol/port dictionaries."""
         self.__logger.debug('Parsing filter data')
         filters = []

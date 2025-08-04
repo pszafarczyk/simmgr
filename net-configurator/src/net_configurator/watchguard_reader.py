@@ -65,16 +65,15 @@ class WatchguardReader:
         self.__logger.debug('Reading all rules')
         rules_without_filters = []
         rule_names = []
-        rules = []
+        rules: list[dict[str, Any]] = []
         command_generator = WatchguardCommandBuilder()
         parse = WatchguardParser()
 
         command_generator.read_rules()
         commands = command_generator.build()
-        for command in commands:
-            response = self._executor.execute(command)
-            rule_names = parse.extract_rule_names(response)
-            self.__logger.info('Extracted %d rule names', len(rule_names))
+        response = self._executor.execute(commands[0])
+        rule_names = parse.extract_rule_names(response)
+        self.__logger.info('Extracted %d rule names', len(rule_names))
 
         for rule in rule_names:
             command_generator = WatchguardCommandBuilder()
@@ -85,15 +84,15 @@ class WatchguardReader:
             rules_without_filters.append(rule_attributes)
             self.__logger.debug('Parsed rule: %s', rule)
 
-        for rule in rules_without_filters:
+        for rule_without_filters in rules_without_filters:
             command_generator = WatchguardCommandBuilder()
-            command_generator.read_filter(rule.filter_name)
+            command_generator.read_filter(rule_without_filters.filter_name)
             response = self._executor.execute(command_generator.build()[0])
             packet_filter = parse.parse_filter(response)
-            rule_to_append = rule
+            rule_to_append = rule_without_filters
             rule_to_append.packet_filter = packet_filter
             rules.append(rule_to_append.to_dict())
-            self.__logger.debug('Appended filter to the rule: %s', rule.filter_name)
+            self.__logger.debug('Appended filter to the rule: %s', rule_without_filters.filter_name)
 
         self.__logger.info('Successfully read %d rules', len(rules))
         return rules
