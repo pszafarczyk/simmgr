@@ -14,6 +14,8 @@ dependencies = [
   "tenacity (>=9.1.2,<10.0.0)",
   "pytest-mock (>=3.14.1,<4.0.0)",
   "python-decouple (>=3.8,<4.0)",
+  "dataclasses-json (>=0.6.7,<0.7.0)",
+  "pytest (>=8.4.1,<9.0.0)",
 ]
 
 [tool.poetry]
@@ -24,6 +26,7 @@ pytest = "^8.4.0"
 ruff = "^0.11.13"
 mypy = "^1.16.0"
 complexipy = "^3.0.0"
+pytest-snapshot = "^0.9.0"
 
 [tool.mypy]
 files = ["src", "tests"]
