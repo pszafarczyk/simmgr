@@ -37,7 +37,7 @@ workspace "SIMMgr" {
                 simmgr.adminapp.policyapi -> simmgr.adminapp.policydb "Reads/Writes data"
             }
             configapp = container "Configurator" {
-                configapi = component "Configurator API"
+                configapi = component "Configurator"
             }
             auditapp = container "Auditor" {
                 auditapi = component "Auditor API"
@@ -48,7 +48,7 @@ workspace "SIMMgr" {
             }
 
             simmgr.simapp.simapi -> simmgr.adminapp.policyapi "Checks policy"
-            simmgr.simapp.simapi -> simmgr.configapp.configapi "Sends config changes"
+            simmgr.configapp.configapi -> simmgr.simapp.simapi "Downloads config changes"
 
             simmgr.adminapp.adminapi -> simmgr.auditapp.auditapi "Reads audit records"
 
