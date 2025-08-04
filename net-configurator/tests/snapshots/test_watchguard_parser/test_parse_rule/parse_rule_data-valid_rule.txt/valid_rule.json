@@ -16,5 +16,5 @@
     "o1",
     "o2"
   ],
-  "packet_filter": []
+  "packet_filter": {}
 }
