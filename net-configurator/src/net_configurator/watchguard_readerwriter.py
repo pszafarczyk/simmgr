@@ -51,9 +51,7 @@ class WatchguardReaderWriter(WatchguardReader):
 
         command_generator.add_rule(rule)
         commands = command_generator.build()
-        self.__logger.debug('Generated %d commands for adding rule', len(commands))
         for command in commands:
-            self.__logger.debug('Executing command: %s', command)
             response = self._executor.execute(command)
             parse.check_for_error(response)
         self.__logger.info('Successfully added rule: %s', rule.identifier)
@@ -70,9 +68,7 @@ class WatchguardReaderWriter(WatchguardReader):
 
         command_generator.delete_rule(rule_identifier)
         commands = command_generator.build()
-        self.__logger.debug('Generated %d commands for deleting rule', len(commands))
         for command in commands:
-            self.__logger.debug('Executing command: %s', command)
             response = self._executor.execute(command)
             parse.check_for_error(response)
         self.__logger.info('Successfully deleted rule: %s', rule_identifier)
@@ -89,9 +85,7 @@ class WatchguardReaderWriter(WatchguardReader):
 
         command_generator.add_filter(packet_filter)
         commands = command_generator.build()
-        self.__logger.debug('Generated %d commands for adding filter', len(commands))
         for command in commands:
-            self.__logger.debug('Executing command: %s', command)
             response = self._executor.execute(command)
             parse.check_for_error(response)
         self.__logger.info('Successfully added filter: %s', packet_filter.identifier)
@@ -108,9 +102,7 @@ class WatchguardReaderWriter(WatchguardReader):
 
         command_generator.delete_filter(filter_identifier)
         commands = command_generator.build()
-        self.__logger.debug('Generated %d commands for deleting filter', len(commands))
         for command in commands:
-            self.__logger.debug('Executing command: %s', command)
             response = self._executor.execute(command)
             parse.check_for_error(response)
         self.__logger.info('Successfully deleted filter: %s', filter_identifier)
@@ -127,9 +119,7 @@ class WatchguardReaderWriter(WatchguardReader):
 
         command_generator.add_owner(owner)
         commands = command_generator.build()
-        self.__logger.debug('Generated %d commands for adding owner', len(commands))
         for command in commands:
-            self.__logger.debug('Executing command: %s', command)
             response = self._executor.execute(command)
             parse.check_for_error(response)
         self.__logger.info('Successfully added owner: %s', owner.identifier)
@@ -146,9 +136,7 @@ class WatchguardReaderWriter(WatchguardReader):
 
         command_generator.delete_owner(owner_identifier)
         commands = command_generator.build()
-        self.__logger.debug('Generated %d commands for deleting owner', len(commands))
         for command in commands:
-            self.__logger.debug('Executing command: %s', command)
             response = self._executor.execute(command)
             parse.check_for_error(response)
         self.__logger.info('Successfully deleted owner: %s', owner_identifier)

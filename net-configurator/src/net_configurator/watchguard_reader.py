@@ -71,7 +71,6 @@ class WatchguardReader:
         command_generator.read_rules()
         commands = command_generator.build()
         for command in commands:
-            self.__logger.debug('Executing command: %s', command)
             response = self._executor.execute(command)
             rule_names = parse.extract_rule_names(response)
             self.__logger.info('Extracted %d rule names', len(rule_names))
@@ -80,7 +79,6 @@ class WatchguardReader:
             command_generator = WatchguardCommandBuilder()
             command_generator.read_rule(rule)
             command = command_generator.build()
-            self.__logger.debug('Executing rule read command for rule: %s', rule)
             response = self._executor.execute(command[0])
             rule_attributes = parse.parse_rule(response)
             rules_without_filters.append(rule_attributes)
@@ -94,7 +92,7 @@ class WatchguardReader:
             rule_to_append = rule
             rule_to_append.packet_filter = packet_filter
             rules.append(rule_to_append.to_dict())
-            self.__logger.debug('Appended rule with filter: %s', rule.filter_name)
+            self.__logger.debug('Appended filter to the rule: %s', rule.filter_name)
 
         self.__logger.info('Successfully read %d rules', len(rules))
         return rules
@@ -109,7 +107,6 @@ class WatchguardReader:
 
         command_generator.read_filters()
         command = command_generator.build()
-        self.__logger.debug('Executing read filters command: %s', command)
         response = self._executor.execute(command[0])
         packet_filter_names = parse.extract_filter_names(response)
         self.__logger.info('Extracted %d filter names', len(packet_filter_names))
@@ -118,7 +115,6 @@ class WatchguardReader:
             command_generator = WatchguardCommandBuilder()
             command_generator.read_filter(packet_filter_name)
             command = command_generator.build()
-            self.__logger.debug('Executing read filter command for filter: %s', packet_filter_name)
             response = self._executor.execute(command[0])
             filter_obj = parse.parse_filter(response)
             packet_filters.append(filter_obj)
@@ -135,7 +131,6 @@ class WatchguardReader:
 
         command_generator.read_owners()
         command = command_generator.build()
-        self.__logger.debug('Executing read owners command: %s', command)
         response = self._executor.execute(command[0])
         owners = parse.extract_owner_names(response)
         self.__logger.info('Successfully read %d owners', len(owners))

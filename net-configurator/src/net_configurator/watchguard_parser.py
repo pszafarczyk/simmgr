@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from dataclasses import field
 import logging
 import re
-from typing import Optional, Self
+from typing import Optional
 
 from dataclasses_json import dataclass_json
 
