@@ -9,12 +9,11 @@ from netmiko import ConnectHandler
 from netmiko import NetmikoAuthenticationException
 from netmiko import NetmikoBaseException
 from netmiko import NetmikoTimeoutException
-from tenacity import retry
-from tenacity import RetryError
+from tenacity import before, before_log, retry
 from tenacity import stop_after_attempt
 from tenacity import wait_fixed
-
 from net_configurator.logg_sensitive_info_filter import redact_sensitive_info
+import socket
 
 
 class ExecutorBaseError(Exception):
@@ -44,7 +43,7 @@ class ExecutorSocketError(ExecutorBaseError):
 class ExecutorDisconnectTimeoutError(ExecutorBaseError):
     """Raised when disconnection attempt times out."""
 
-    def __init__(self, message: str = 'Failed to disconnect within timeout period', retries: int = 10):
+    def __init__(self, message: str = 'Failed to disconnect within timeout period'):
         """Initialize the exception with a message and retry count.
 
         Args:
@@ -52,7 +51,6 @@ class ExecutorDisconnectTimeoutError(ExecutorBaseError):
                 "Failed to disconnect within timeout period".
             retries (int): Number of retry attempts. Defaults to 20.
         """
-        self.retries = retries
         super().__init__(message)
 
 
@@ -134,6 +132,7 @@ class Executor:
         else:
             self.__logger.warning('Already connected to the device')
 
+    @retry(reraise=True, stop=stop_after_attempt(5))
     def disconnect(self) -> None:
         """Send 'exit' and wait until the connection is closed.
 
@@ -141,17 +140,22 @@ class Executor:
             ExecutorDisconnectTimeoutError: If connection doesn't close
                 within expected time.
         """
-        if self.is_connected():
-            self.__logger.info('Attempting to disconnect from device')
-            try:
-                self._try_disconnect()
-                self.__logger.info('Successfully disconnected from device')
-            except RetryError as err:
-                self.__logger.error('Disconnect timeout after %d retries', 20)
-                raise ExecutorDisconnectTimeoutError(retries=20) from err
+        self.__logger.info('Attempting to disconnect from device')
+        if not self.is_connected():
+            self.__logger.warning('No active connection to disconnect')
             self.__connection = None
-        else:
-            self.__logger.debug('No active connection to disconnect')
+            return
+
+        try:
+            self._send_command('exit')  # type: ignore[union-attr]
+        except (OSError, ExecuteError) as err:
+            self.__logger.info('Successfully disconnected from device')
+            self.__connection = None
+            return
+
+        # got prompt
+        self.__logger.info('Got prompt after calling exit')
+        raise ExecutorDisconnectTimeoutError
 
     def _send_command(self, command: str, expect_output: str = '.*WG[0-9a-zA-Z()/-]*#$') -> str:
         """Wrapper for Netmiko send_command.
@@ -178,25 +182,13 @@ class Executor:
 
     def is_connected(self) -> bool:
         """Check if there is connection."""
-        status = isinstance(self.__connection, BaseConnection) and self.__connection.is_alive()
-        self.__logger.debug('Connection status check: %s', status)
-        return status
-
-    @retry(stop=stop_after_attempt(10), wait=wait_fixed(0.5))
-    def _try_disconnect(self) -> None:
-        """Retry until connection is inactive.
-
-        Raises:
-            ExecutorDisconnectTimeoutError: If connection remains active
-                after retry period.
-        """
-        if self.is_connected():
-            self.__logger.debug('Sending exit command for disconnection')
-            self._send_command('exit', expect_output='')
-            if self.is_connected():
-                msg = 'Connection still active after exit command'
-                self.__logger.warning(msg)
-                raise ExecutorDisconnectTimeoutError(msg)
+        try:
+            status = isinstance(self.__connection, BaseConnection) and self.__connection.is_alive()
+            self.__logger.debug('Connection status check: %s', status)
+            return status
+        except OSError as err:
+            self.__logger.debug('Connection status check resolved by exception: %s', False)
+            return False
 
     def execute(self, command: str) -> str:
         """Execute command and return output as str.

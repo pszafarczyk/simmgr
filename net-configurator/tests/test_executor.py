@@ -64,9 +64,9 @@ def coordinated_mocks(mocker: MockerFixture) -> Callable[..., tuple[MagicMock, M
         """
         exit_call_count: int = 0
 
-        def send_command(command: str, expect_output: str) -> None:
+        def send_command(command: str) -> None:
             nonlocal exit_call_count
-            if command == 'exit' and expect_output == '':
+            if command == 'exit':
                 exit_call_count += 1
 
         def is_connected() -> bool:
@@ -116,7 +116,7 @@ def test_context_manager_exit(executor: Executor, coordinated_mocks: Callable[..
     send_command_mock, is_connected_mock = coordinated_mocks(initially_connected=True, disconnect_after_n_exit_calls=1)
     with patch.object(executor, '_send_command', send_command_mock), patch.object(executor, 'is_connected', is_connected_mock), executor:
         pass
-    send_command_mock.assert_called_with('exit', expect_output='')
+    send_command_mock.assert_called_with('exit')
     assert not executor.is_connected()
 
 
@@ -124,24 +124,24 @@ def test_disconnect_success(executor: Executor, coordinated_mocks: Callable[...,
     """Verify disconnect closes the connection successfully."""
     send_command_mock, is_connected_mock = coordinated_mocks(initially_connected=True, disconnect_after_n_exit_calls=1)
     with patch.object(executor, '_send_command', send_command_mock), patch.object(executor, 'is_connected', is_connected_mock):
-        executor._try_disconnect()
+        executor.disconnect()
 
-    send_command_mock.assert_called_with('exit', expect_output='')
+    send_command_mock.assert_called_with('exit')
     assert not executor.is_connected()
 
 
 def test_disconnect_success_with_tries(executor: Executor, coordinated_mocks: Callable[..., tuple[MagicMock, MagicMock]]) -> None:
     """Verify disconnect succeeds after multiple tries."""
-    send_command_mock, is_connected_mock = coordinated_mocks(initially_connected=True, disconnect_after_n_exit_calls=3)
+    send_command_mock, is_connected_mock = coordinated_mocks(initially_connected=True, disconnect_after_n_exit_calls=4)
 
     with (
         patch.object(executor, '_send_command', send_command_mock),
         patch.object(executor, 'is_connected', is_connected_mock),
-        patch.object(executor._try_disconnect.retry, 'sleep', Mock()),  # type: ignore[attr-defined]
+        patch.object(executor.disconnect.retry, 'sleep', Mock()),  # type: ignore[attr-defined]
     ):
         executor.disconnect()
 
-    send_command_mock.assert_called_with('exit', expect_output='')
+    send_command_mock.assert_called_with('exit')
     assert not executor.is_connected()
 
 
@@ -151,12 +151,12 @@ def test_disconnect_timeout(executor: Executor, coordinated_mocks: Callable[...,
     with (
         patch.object(executor, '_send_command', send_command_mock),
         patch.object(executor, 'is_connected', is_connected_mock),
-        patch.object(executor._try_disconnect.retry, 'sleep', Mock()),  # type: ignore[attr-defined]
+        patch.object(executor.disconnect.retry, 'sleep', Mock()),  # type: ignore[attr-defined]
         pytest.raises(ExecutorDisconnectTimeoutError, match='Failed to disconnect within timeout period'),
     ):
         executor.disconnect()
 
-    send_command_mock.assert_called_with('exit', expect_output='')
+    send_command_mock.assert_called_with('exit')
     is_connected_mock.assert_called()
 
 
