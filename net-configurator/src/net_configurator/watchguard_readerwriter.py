@@ -1,16 +1,15 @@
-"""Reader/writer for Watchguard routers."""
-
-from typing import Any
+"""Reader/writer classes for Watchguard routers."""
 
 import logging
+from typing import Any
 
+from net_configurator.logg_sensitive_info_filter import redact_sensitive_info
 from net_configurator.rule import Owner
 from net_configurator.rule import PacketFilter
 from net_configurator.rule import Rule
 from net_configurator.watchguard_command_builder import WatchguardCommandBuilder
 from net_configurator.watchguard_parser import WatchguardParser
 from net_configurator.watchguard_reader import WatchguardReader
-from net_configurator.logg_sensitive_info_filter import redact_sensitive_info
 
 
 class WatchguardReaderWriter(WatchguardReader):

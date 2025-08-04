@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from dataclasses import field
 import logging
 import re
-from typing import Optional
 
 from dataclasses_json import dataclass_json
 
@@ -15,7 +14,7 @@ class Network:
     """Represents a network range or single IP/CIDR."""
 
     ip_low: str
-    ip_high: Optional[str]
+    ip_high: str | None
 
 
 @dataclass_json
@@ -24,8 +23,8 @@ class Filter:
     """Represents a filter with protocol and port information."""
 
     protocol: str
-    port_low: Optional[str]
-    port_high: Optional[str]
+    port_low: str | None
+    port_high: str | None
 
 
 @dataclass_json

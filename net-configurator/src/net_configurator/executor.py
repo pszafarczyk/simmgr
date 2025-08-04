@@ -9,35 +9,26 @@ from netmiko import ConnectHandler
 from netmiko import NetmikoAuthenticationException
 from netmiko import NetmikoBaseException
 from netmiko import NetmikoTimeoutException
-from tenacity import before, before_log, retry
+from tenacity import retry
 from tenacity import stop_after_attempt
-from tenacity import wait_fixed
+
 from net_configurator.logg_sensitive_info_filter import redact_sensitive_info
-import socket
 
 
 class ExecutorBaseError(Exception):
     """Base class for Executor-related errors."""
 
-    pass
-
 
 class ExecutorConnectionTimeoutError(ExecutorBaseError):
     """Raised when connection attempt times out."""
-
-    pass
 
 
 class ExecutorAuthenticationError(ExecutorBaseError):
     """Raised when authentication fails."""
 
-    pass
-
 
 class ExecutorSocketError(ExecutorBaseError):
     """Raised when a socket error occurs during connection."""
-
-    pass
 
 
 class ExecutorDisconnectTimeoutError(ExecutorBaseError):
@@ -57,13 +48,9 @@ class ExecutorDisconnectTimeoutError(ExecutorBaseError):
 class NoConnectionError(ExecutorBaseError):
     """Raised when attempting to execute a command without an active connection."""
 
-    pass
-
 
 class ExecuteError(ExecutorBaseError):
     """Raised when command execution fails."""
-
-    pass
 
 
 class Executor:
@@ -119,15 +106,15 @@ class Executor:
                 self.__logger.info('Successfully connected to device')
             except NetmikoTimeoutException as err:
                 connection_timeout_msg = 'Connection timed out'
-                self.__logger.error('Connection timeout: %s', connection_timeout_msg)
+                self.__logger.exception('Connection timeout: %s', connection_timeout_msg)
                 raise ExecutorConnectionTimeoutError(connection_timeout_msg) from err
             except NetmikoAuthenticationException as err:
                 authentication_failed_msg = 'Authentication failed'
-                self.__logger.error('Authentication failed: %s', authentication_failed_msg)
+                self.__logger.exception('Authentication failed: %s', authentication_failed_msg)
                 raise ExecutorAuthenticationError(authentication_failed_msg) from err
             except OSError as err:
                 socket_error_msg = 'Socket error during connection'
-                self.__logger.error('Socket error: %s', socket_error_msg)
+                self.__logger.exception('Socket error: %s', socket_error_msg)
                 raise ExecutorSocketError(socket_error_msg) from err
         else:
             self.__logger.warning('Already connected to the device')
@@ -148,7 +135,7 @@ class Executor:
 
         try:
             self._send_command('exit')  # type: ignore[union-attr]
-        except (OSError, ExecuteError) as err:
+        except (OSError, ExecuteError):
             self.__logger.info('Successfully disconnected from device')
             self.__connection = None
             return
@@ -174,10 +161,10 @@ class Executor:
         try:
             output = cast(str, self.__connection.send_command(command, expect_string=expect_output))  # type: ignore[union-attr]
             self.__logger.debug('Command executed successfully: %s', command)
-            return output
+            return output  # noqa: TRY300
         except NetmikoBaseException as err:
             execute_error_msg = f'Failed to execute command: {command}'
-            self.__logger.error('Command execution failed: %s', execute_error_msg)
+            self.__logger.exception('Command execution failed: %s', execute_error_msg)
             raise ExecuteError(execute_error_msg) from err
 
     def is_connected(self) -> bool:
@@ -185,8 +172,8 @@ class Executor:
         try:
             status = isinstance(self.__connection, BaseConnection) and self.__connection.is_alive()
             self.__logger.debug('Connection status check: %s', status)
-            return status
-        except OSError as err:
+            return status  # noqa: TRY300
+        except OSError:
             self.__logger.debug('Connection status check resolved by exception: %s', False)
             return False
 

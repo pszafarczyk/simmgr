@@ -2,7 +2,6 @@
 
 from typing import Any
 
-
 SENSITIVE_KEYS = {'password', 'secret', 'passphrase'}
 
 

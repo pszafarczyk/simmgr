@@ -2,8 +2,8 @@
 
 from collections.abc import Iterator
 from contextlib import contextmanager
-
 import logging
+
 from net_configurator.rule import NetworkPeer
 from net_configurator.rule import NetworkService
 from net_configurator.rule import Owner

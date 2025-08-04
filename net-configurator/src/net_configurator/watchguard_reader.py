@@ -1,12 +1,13 @@
-from typing import Any
-from types import TracebackType
-
-from net_configurator.executor import Executor
-from net_configurator.watchguard_command_builder import WatchguardCommandBuilder
-from net_configurator.watchguard_parser import WatchguardParser
-from net_configurator.logg_sensitive_info_filter import redact_sensitive_info
+"""Reader classes for Watchguard routers."""
 
 import logging
+from types import TracebackType
+from typing import Any
+
+from net_configurator.executor import Executor
+from net_configurator.logg_sensitive_info_filter import redact_sensitive_info
+from net_configurator.watchguard_command_builder import WatchguardCommandBuilder
+from net_configurator.watchguard_parser import WatchguardParser
 
 
 class WatchguardReader:
