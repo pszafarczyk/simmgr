@@ -1,3 +1,5 @@
+Further development has been moved to a private repository
+
 SIM Card Management Application
 ===============================
 
